@@ -7,11 +7,12 @@ import numpy
 
 
 class SCVB0(object):
+    
     ''' Implementation of Stochastic CVB0'''
     def initParam(self):
-        self.w = 102660;
-        self.k = 100;
-        self.d = 1000;
+        self.w = 102660
+        self.k = 100
+        self.d = 1000
         self.nPhi = numpy.zeros((self.w, self.k), int)
         self.nTheta = numpy.zeros((self.d, self.k), int)
         self.nz = numpy.zeros((self.k), int)

@@ -8,7 +8,6 @@ try:
     numOfDoc = int(f.readline())
     numOfTerms = int(f.readline())
     numOfWordsInCorpus = int(f.readline())
-    TDArray = numpy.zeros((102660, 1000), int)
     block = f.readline()
     docList = []
     while (block) != "":
