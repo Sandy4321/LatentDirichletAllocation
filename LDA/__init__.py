@@ -1,5 +1,7 @@
 import csv
 import numpy
+import Document
+import SCVB0
 from token import NEWLINE
 
 
@@ -10,16 +12,24 @@ try:
     numOfWordsInCorpus = int(f.readline())
     TDArray = numpy.zeros((102660, 1000), int)
     block = f.readline()
+    docList = []
     while (block) != "":
         row = block.split()
         docId = int(row[0])
-        wordId = int(row[1])
-        freq = int(row[2])
-        TDArray[wordId - 1][docId - 1] += freq
-        block = f.readline()
-    for i in range(0, 102660):
-        for j in range(0, 1000):
-            print TDArray[i][j],
-        print "\n"
+        termDict = {}
+        while (docId == int(row[0])) :
+            docId = int(row[0]) 
+            wordId = int(row[1])
+            freq = int(row[2])
+            termDict[wordId] = freq
+            block = f.readline()
+            if(block == ""):
+                break
+            row = block.split()
+        newDoc = Document.Document(docId, termDict)
+        docList.append(newDoc)
+    SCVB0.SCVB0.initParam()
+    SCVB0.SCVB0.run(docList)
+    
 finally:
     f.close()
