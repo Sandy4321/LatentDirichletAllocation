@@ -1,8 +1,6 @@
-import csv
 import numpy
 import Document
 import SCVB0
-from token import NEWLINE
 
 
 f = open("/media/WORK/CS686/Mini-Project/data.txt", 'r')
