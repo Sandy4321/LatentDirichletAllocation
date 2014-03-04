@@ -28,8 +28,8 @@ try:
             row = block.split()
         newDoc = Document.Document(docId, termDict)
         docList.append(newDoc)
-    SCVB0.SCVB0.initParam()
-    SCVB0.SCVB0.run(docList)
+    scvb0 = SCVB0.SCVB0()
+    scvb0.run(docList)
     
 finally:
     f.close()
