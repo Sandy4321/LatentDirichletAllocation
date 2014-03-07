@@ -12,6 +12,7 @@ class LDA {
 public:
 	LDA();
 	virtual ~LDA();
+	int main(int argv, char *argc);
 };
 
 #endif /* LDA_H_ */

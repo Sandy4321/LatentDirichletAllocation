@@ -16,3 +16,6 @@ LDA::~LDA() {
 	// TODO Auto-generated destructor stub
 }
 
+int main(int argv, char *argc) {
+	return 0;
+}
