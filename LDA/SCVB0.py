@@ -28,6 +28,8 @@ class SCVB0(object):
         self.eta = numpy.empty(self.w)
         self.eta.fill(0.01)  # 0.01
         self.c = 100000000
+        self.Cj = {}
+        self.M = 0
         '''for each mini-batch'''
         self.nPhiHat = numpy.zeros((self.w, self.k), int)
         self.nzHat = numpy.zeros((self.k), int)
@@ -35,6 +37,13 @@ class SCVB0(object):
         self.gamma = numpy.zeros((self.w, self.k), int)
     
     def run(self, docList):
+        self.M = 0
+        for doc in docList:
+            temp = 0
+            for term in doc.termDict :
+                temp += doc.termDict[term]
+            self.Cj[doc.id] = temp
+            self.M += temp
         j = 0
         for doc in docList:
             j += 1
@@ -42,12 +51,12 @@ class SCVB0(object):
             for term in doc.termDict :
                 i += 1
                 self.updateGamma(i, j, term)
-                self.updateNTheta(i, j)
+                self.updateNTheta(i, j, term)
             i = 0
             for term in doc.termDict :
                 i += 1
                 self.updateGamma(i, j, term)
-                self.updateNTheta(i, j)
+                self.updateNTheta(i, j, term)
                 for k in range(0, self.k - 1):
                     self.nPhiHat[term][k] += self.nPhiHat[term][k] + self.c * self.gamma[term][k]
                     self.nzHat[k] += self.nzHat[k] + self.c * self.gamma[term][k]
@@ -65,17 +74,25 @@ class SCVB0(object):
 
     def updateNTheta(self, i, j, Wij):
         # Equation 9 instead of Equation 6, we are using "clumping"
-        # Need to use Cj instead of C
         for k in range(1, self.k):
-            self.nTheta[j][k] = ((1-self.rhoTheta)*self.nTheta[j][k]) + (self.rhoTheta * self.c * self.gamma[Wij][k]) 
+            self.nTheta[j][k] = ((1 - self.rhoTheta) * self.nTheta[j][k]) + (self.rhoTheta * self.Cj[j] * self.gamma[Wij][k]) 
         return
 
     def updateNPhi(self):
         # Equation 7
+        for k in range(1, self.k):
+            for w in range(1, self.w):
+                self.nPhiHat[w][k] = (self.c * self.gamma[w][k]) / self.M
+                self.nPhi[w][k] = ((1 - self.rhoPhi) * self.nPhi[w][k]) + (self.rhoPhi * self.nPhiHat[w][k]) 
         return
     
     def updateNZ(self):
         # Equation 8
+        for k in range(1, self.k):
+            for w in range(1, self.w):
+                self.nzHat[k] += self.gamma[w][k]
+            self.nzHat[k] = (self.c * self.nzHat[k]) / self.M
+            self.nz[k] = ((1 - self.rhoPhi) * self.nz) + (self.rhoPhi * self.nzHat[k])  
         return
             
     def __init__(self):
