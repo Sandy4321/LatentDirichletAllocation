@@ -3,7 +3,7 @@ import Document
 import SCVB0
 
 
-f = open("/media/WORK/CS686/Mini-Project/data.txt", 'r')
+f = open("/media/WORK/CS686/Mini-Project/KOS Dataset/docword.kos1.txt", 'r')
 try:
     numOfDoc = int(f.readline())
     numOfTerms = int(f.readline())
