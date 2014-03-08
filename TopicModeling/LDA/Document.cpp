@@ -8,8 +8,12 @@
 #include "Document.h"
 
 Document::Document() {
-	// TODO Auto-generated constructor stub
+	docId = 0;
+}
 
+Document::Document(int id, intMap termMap) {
+	docId = id;
+	termDict = termMap;
 }
 
 Document::~Document() {

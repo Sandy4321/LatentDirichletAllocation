@@ -1,6 +1,6 @@
 # Compiled source #
 ###################
 *.o
-Data/*
-/Data
+TopicModeling/Data/*
+/TopicModeling/Data
 TopicModeling
