@@ -13,7 +13,7 @@
 
 using namespace std;
 
-typedef std::map<string,int> intMap;
+typedef std::map<int,int> intMap;
 
 class Document {
 public:

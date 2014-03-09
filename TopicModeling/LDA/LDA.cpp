@@ -10,7 +10,10 @@
 #include <string>
 #include <string.h>
 #include <stdlib.h>
+#include <vector>
 #include "LDA.h"
+#include "Document.h"
+#include "SCVB0.h"
 
 LDA::LDA() {
 	numOfDoc = 0;
@@ -41,19 +44,37 @@ void LDA::parseDataFile() {
 	infile >> numOfDoc;
 	infile >> numOfTerms;
 	infile >> numOfWordsInCorpus;
-	cout << numOfDoc << " " << numOfTerms << " " << numOfWordsInCorpus << "\n";
-	cout << "----------------------------------------------\n";
+	cout << numOfDoc << " " << numOfTerms << " " << numOfWordsInCorpus << endl;
+	cout << "--------------------" << endl;
 	int docId, wordId, freq;
-	while (infile >> docId >> wordId >> freq) {
-		cout << docId << " " << wordId << " " << freq << "\n";
-		//Document *doc = new Document();
+	int eof = 0;
+	std::vector<Document> docVector;
+	if (!(infile >> docId >> wordId >> freq)) {
+		eof = 1;
 	}
+	while (!eof) {
+		intMap termMap;
+		int oldDocId = docId;
+		while (docId == oldDocId) {
+			cout << docId << " " << wordId << " " << freq << endl;
+			termMap[wordId] = freq;
+			if (!(infile >> docId >> wordId >> freq)) {
+				eof = 1;
+				break;
+			}
+		}
+		Document *newDoc = new Document(oldDocId, termMap);
+		docVector.push_back(*newDoc);
+	}
+	SCVB0 *scvb0 = new SCVB0(iterations, numOfTopics, numOfTerms, numOfDoc,
+			numOfWordsInCorpus);
+	scvb0->run(docVector);
 }
 LDA *parseCommandLine(int argv, char *argc[]) {
 	argv--, argc++;
 	if (argv < 3) {
 		cerr
-				<< "Malformed command. Correct format: fastLDA docword.txt iterations NumOfTopics"
+				<< "Malformed command. Correct format: ./fastLDA docword.txt iterations NumOfTopics"
 				<< endl;
 		exit(1);
 	}
