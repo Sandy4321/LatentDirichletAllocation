@@ -96,7 +96,7 @@ void SCVB0::run(vector<Document> docVector) {
 			i += 1;
 //			updateGamma(i, j, term, &gamma, &nPhi, &nTheta, nz, eta, alpha);
 			double sigmaEta = 0.0;
-			for (unsigned int a = 0; a < sizeof(eta) / sizeof(double); a++) {
+			for (int a = 0; a < W; a++) {
 				double e = eta[a];
 				sigmaEta += e;
 			}
@@ -118,7 +118,7 @@ void SCVB0::run(vector<Document> docVector) {
 			i += 1;
 //			updateGamma(i, j, term, gamma, nPhi, nTheta, nz, eta, alpha);
 			double sigmaEta = 0.0;
-			for (unsigned int a = 0; a < sizeof(eta) / sizeof(double); a++) {
+			for (int a = 0; a < W; a++) {
 				double e = eta[a];
 				sigmaEta += e;
 			}
