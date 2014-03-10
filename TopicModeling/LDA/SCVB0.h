@@ -36,7 +36,8 @@ public:
 			int corpusSize);
 	virtual ~SCVB0();
 	void run(vector<Document> docVector);
-	void updateGamma(int i, int j, int Wij);
+	void updateGamma(int i, int j, int Wij, double **gamma, double **nPhi,
+			double **nTheta, double *nz, double **eta, double *alpha);
 	void updateNTheta(int i, int j, int Wij);
 	void updateNPhi();
 	void updateNZ();
