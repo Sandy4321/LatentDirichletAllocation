@@ -16,8 +16,8 @@ using namespace std;
 class SCVB0 {
 public:
 	int iterations;
-	int K; //Number of Topics
-	int W; //no of terms in vocab
+	static int K; //Number of Topics
+	static int W; //no of terms in vocab
 	int D; //Total no of docs in corpus
 	int d; //Number of documents to be processed by each mini-batch
 	int C; //Total no of words in corpus
@@ -36,11 +36,12 @@ public:
 			int corpusSize);
 	virtual ~SCVB0();
 	void run(vector<Document> docVector);
-	void updateGamma(int i, int j, int Wij, double **gamma, double **nPhi,
-			double **nTheta, double *nz, double **eta, double *alpha);
-	void updateNTheta(int i, int j, int Wij);
-	void updateNPhi();
-	void updateNZ();
+	/*void updateGamma(int i, int j, int Wij, double *gamma[], double *nPhi[],
+			double *nTheta[], double *nz, double *eta, double *alpha);*/
+	/*void updateNTheta(int j, int Wij, double **nTheta, double rhoTheta,
+			double **gamma);
+	void updateNPhi(double **nPhiHat, double *nPhi, double rhoPhi);*/
+	void updateNZ(double *nzHat, double *nz, double rhoPhi,double gamma[W][K]);
 };
 
 #endif /* SCVB0_H_ */
