@@ -53,15 +53,15 @@ void SCVB0::run(vector<Document> docVector) {
 
 	memset(nPhi, 0.0, sizeof nPhi);
 	memset(nTheta, 0.0, sizeof nTheta);
-	memset(nz, 0.0, sizeof nz);
-	memset(alpha, 0.1, sizeof alpha);
-	memset(eta, 0.01, sizeof eta);
-	for (int a = 0; a < d + 1; ++a) {
-		for (int b = 0; b < K; ++b) {
-			std::cout << nTheta[a][b] << " ";
-		}
-		std::cout << endl;
-	}
+	memset(nz, 0.1, sizeof nz);
+	memset(alpha, 0, sizeof alpha);
+	memset(eta, 0, sizeof eta);
+
+	for (int b = 0; b < K; ++b)
+		alpha[b] += 0.1;
+	for (int b = 0; b < W; ++b)
+		eta[b] += 0.01;
+
 	//For each mini-batch
 	double nPhiHat[W][K];
 	double nzHat[K];
@@ -122,9 +122,11 @@ void SCVB0::run(vector<Document> docVector) {
 				double e = eta[a];
 				sigmaEta += e;
 			}
+			//cout<<"Sigma Eta: "<<sigmaEta<<endl;
 			for (int k = 0; k < K - 1; k++) {
 				gamma[term][k] = ((nPhi[term][k] + eta[term])
 						/ (nz[k] + sigmaEta)) * (nTheta[j][k] + alpha[k]);
+				//cout <<"calc gamma "<<(nz[k] + sigmaEta)<<endl;
 			}
 //			updateNTheta(j, term, nTheta, rhoTheta, gamma);
 			for (int k = 0; k < K - 1; k++) {
@@ -152,59 +154,10 @@ void SCVB0::run(vector<Document> docVector) {
 		nzHat[k] = (C * nzHat[k]) / M;
 		nz[k] = ((1 - rhoPhi) * nz[k]) + (rhoPhi * nzHat[k]);
 	}
-	for (int a = 0; a < W; ++a) {
+	for (int a = 0; a < d+1; ++a) {
 		for (int b = 0; b < K; ++b) {
-			cout << nPhi[a][b] << " ";
+			cout << nTheta[a][b] << " ";
 		}
 		cout << endl;
 	}
 }
-
-/*Equation 5*/
-/*void SCVB0::updateGamma(int i, int j, int Wij, double *gamma[], double *nPhi[],
- double *nTheta[], double *nz, double *eta, double *alpha) {
- double sigmaEta = 0.0;
- for (int a = 0; a < sizeof(eta) / sizeof(double); a++) {
- double e = eta[a];
- sigmaEta += e;
- }
- for (int k = 0; k < K - 1; k++) {
- gamma[Wij][k] = ((nPhi[Wij][k] + eta[Wij]) / (nz[k] + sigmaEta))
- * (nTheta[j][k] + alpha[k]);
- }
- }*/
-/*
- Equation 9 instead of Equation 6, we are using "clumping"
- void SCVB0::updateNTheta(int j, int Wij, double *nTheta[], double rhoTheta,
- double *gamma[]) {
- for (int k = 0; k < K - 1; k++) {
- nTheta[j][k] = (((1 - rhoTheta) * nTheta[j][k])
- + (rhoTheta * Cj[j] * gamma[Wij][k]));
- return;
- }
- }
-
- Equation 7
- void SCVB0::updateNPhi(double *nPhiHat[], double *nPhi, double rhoPhi,
- double *gamma[]) {
-
- for (int k = 0; k < K - 1; k++) {
- for (int w = 0; w < W; w++) {
- nPhiHat[w][k] = (C * gamma[w][k]) / M;
- nPhi[w][k] = ((1 - rhoPhi) * nPhi[w][k]) + (rhoPhi * nPhiHat[w][k]);
- }
- }
- return;
- }
-
- Equation 8
- void SCVB0::updateNZ(double nzHat[], double nz[], double rhoPhi,
- double *gamma[W][K]) {
- for (int k = 0; k < K - 1; k++) {
- for (int i = 0; i < W; i++) {
- nzHat[k] = nzHat[k] + gamma[i][k];
- }
- nzHat[k] = (C * nzHat[k]) / M;
- nz[k] = ((1 - rhoPhi) * nz[k]) + (rhoPhi * nzHat[k]);
- }
- }*/
