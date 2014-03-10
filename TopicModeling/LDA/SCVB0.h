@@ -10,14 +10,15 @@
 
 #include <vector>
 #include "Document.h"
+#include <iostream>
 
 using namespace std;
 
 class SCVB0 {
 public:
 	int iterations;
-	static int K; //Number of Topics
-	static int W; //no of terms in vocab
+	int K; //Number of Topics
+	int W; //no of terms in vocab
 	int D; //Total no of docs in corpus
 	int d; //Number of documents to be processed by each mini-batch
 	int C; //Total no of words in corpus
@@ -40,8 +41,8 @@ public:
 			double *nTheta[], double *nz, double *eta, double *alpha);*/
 	/*void updateNTheta(int j, int Wij, double **nTheta, double rhoTheta,
 			double **gamma);
-	void updateNPhi(double **nPhiHat, double *nPhi, double rhoPhi);*/
-	void updateNZ(double *nzHat, double *nz, double rhoPhi,double gamma[W][K]);
+	void updateNPhi(double **nPhiHat, double *nPhi, double rhoPhi);
+	void updateNZ(double *nzHat, double *nz, double rhoPhi,double *gamma[W][K]);*/
 };
 
 #endif /* SCVB0_H_ */
