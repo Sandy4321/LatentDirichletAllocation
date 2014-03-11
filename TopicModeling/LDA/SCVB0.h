@@ -2,7 +2,7 @@
  * SCVB0.h
  *
  *  Created on: Mar 7, 2014
- *      Author: vspathak
+ *      Author: Varad Pathak, Arul Samuel
  */
 
 #ifndef SCVB0_H_

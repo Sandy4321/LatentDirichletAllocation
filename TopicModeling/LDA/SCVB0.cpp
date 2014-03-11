@@ -2,7 +2,7 @@
  * SCVB0.cpp
  *
  *  Created on: Mar 7, 2014
- *      Author: vspathak
+ *      Author: Varad Pathak, Arul Samuel
  */
 
 #include "SCVB0.h"
