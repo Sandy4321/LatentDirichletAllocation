@@ -10,6 +10,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <omp.h>
 
 using namespace std;
 
@@ -34,7 +35,7 @@ SCVB0::SCVB0(int iter, int numberOfTopics, int vocabSize, int numOfDocs,
 	W = 102660;
 	D = 300000;
 	d = 300000; //Assuming number of cores = 6
-	C = 100000000;
+	C = 69679427;
 
 	M = 0;
 
@@ -97,12 +98,12 @@ void SCVB0::run(vector<Document> docVector) {
 			int term = iter->first;
 			i += 1;
 //			updateGamma(i, j, term, &gamma, &nPhi, &nTheta, nz, eta, alpha);
+#pragma omp parallel for
 			for (int k = 0; k < K - 1; k++) {
 				gamma[term][k] = ((nPhi[term][k] + eta) / (nz[k] + eta * M))
 						* (nTheta[j][k] + alpha);
-			}
-//			updateNTheta(j, term, nTheta, rhoTheta, gamma);
-			for (int k = 0; k < K - 1; k++) {
+
+				//updateNTheta(j, term, nTheta, rhoTheta, gamma);
 				nTheta[j][k] = ((pow((1 - rhoTheta), doc->termDict[term])
 						* nTheta[j][k])
 						+ ((1 - pow((1 - rhoTheta), doc->termDict[term]))
@@ -121,6 +122,7 @@ void SCVB0::run(vector<Document> docVector) {
 						* (nTheta[j][k] + alpha);
 			}
 //			updateNTheta(j, term, nTheta, rhoTheta, gamma);
+#pragma omp parallel for
 			for (int k = 0; k < K - 1; k++) {
 				nTheta[j][k] = ((pow((1 - rhoTheta), doc->termDict[term])
 						* nTheta[j][k])
@@ -134,16 +136,13 @@ void SCVB0::run(vector<Document> docVector) {
 		}
 	}
 //	updateNPhi(nPhiHat, nPhi, rhoPhi);
+//	updateNZ(nzHat, nz, rhoPhi, &gamma);
+#pragma omp parallel for
 	for (int k = 0; k < K - 1; k++) {
 		for (int w = 0; w < W; w++) {
 			nPhiHat[w][k] = (C * gamma[w][k]) / M;
 			nPhi[w][k] = ((1 - rhoPhi) * nPhi[w][k]) + (rhoPhi * nPhiHat[w][k]);
-		}
-	}
-//	updateNZ(nzHat, nz, rhoPhi, &gamma);
-	for (int k = 0; k < K - 1; k++) {
-		for (int i = 0; i < W; i++) {
-			nzHat[k] = nzHat[k] + gamma[i][k];
+			nzHat[k] = nzHat[k] + gamma[w][k];
 		}
 		nzHat[k] = (C * nzHat[k]) / M;
 		nz[k] = ((1 - rhoPhi) * nz[k]) + (rhoPhi * nzHat[k]);
