@@ -56,7 +56,7 @@ void LDA::parseDataFile() {
 		intMap termMap;
 		int oldDocId = docId;
 		while (docId == oldDocId) {
-			cout << docId << " " << wordId << " " << freq << endl;
+//			cout << docId << " " << wordId << " " << freq << endl;
 			termMap[wordId] = freq;
 			if (!(infile >> docId >> wordId >> freq)) {
 				eof = 1;
@@ -84,7 +84,9 @@ LDA *parseCommandLine(int argv, char *argc[]) {
 
 int main(int argv, char *argc[]) {
 
+    clock_t tStart = clock();
 	LDA *lda = parseCommandLine(argv, argc);
 	lda->parseDataFile();
+	printf("Time taken: %.2fs\n", (double)(clock() - tStart)/CLOCKS_PER_SEC);
 	return 0;
 }

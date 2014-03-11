@@ -22,11 +22,20 @@ SCVB0::SCVB0(int iter, int numberOfTopics, int vocabSize, int numOfDocs,
 //	d = D / 6; //Assuming number of cores = 6
 //	C = corpusSize;
 
+//For KOS
+//	K = 40;
+//	W = 6906;
+//	D = 3430;
+//	d = 3430; //Assuming number of cores = 6
+//	C = 467714;
+
+//For NYT
 	K = 10;
-	W = 6906;
-	D = 10;
-	d = 10; //Assuming number of cores = 6
-	C = 467714;
+	W = 102660;
+	D = 300000;
+	d = 300000; //Assuming number of cores = 6
+	C = 100000000;
+
 	M = 0;
 
 	s = 10;
@@ -48,19 +57,12 @@ void SCVB0::run(vector<Document> docVector) {
 	double nTheta[d + 1][K];
 	double nz[K];
 
-	double alpha[K];
-	double eta[W];
+	double alpha = 0.1;
+	double eta = 0.01;
 
 	memset(nPhi, 0.0, sizeof nPhi);
 	memset(nTheta, 0.0, sizeof nTheta);
-	memset(nz, 0.1, sizeof nz);
-	memset(alpha, 0, sizeof alpha);
-	memset(eta, 0, sizeof eta);
-
-	for (int b = 0; b < K; ++b)
-		alpha[b] += 0.1;
-	for (int b = 0; b < W; ++b)
-		eta[b] += 0.01;
+	memset(nz, 0.0, sizeof nz);
 
 	//For each mini-batch
 	double nPhiHat[W][K];
@@ -95,19 +97,16 @@ void SCVB0::run(vector<Document> docVector) {
 			int term = iter->first;
 			i += 1;
 //			updateGamma(i, j, term, &gamma, &nPhi, &nTheta, nz, eta, alpha);
-			double sigmaEta = 0.0;
-			for (int a = 0; a < W; a++) {
-				double e = eta[a];
-				sigmaEta += e;
-			}
 			for (int k = 0; k < K - 1; k++) {
-				gamma[term][k] = ((nPhi[term][k] + eta[term])
-						/ (nz[k] + sigmaEta)) * (nTheta[j][k] + alpha[k]);
+				gamma[term][k] = ((nPhi[term][k] + eta) / (nz[k] + eta * M))
+						* (nTheta[j][k] + alpha);
 			}
 //			updateNTheta(j, term, nTheta, rhoTheta, gamma);
 			for (int k = 0; k < K - 1; k++) {
-				nTheta[j][k] = (((1 - rhoTheta) * nTheta[j][k])
-						+ (rhoTheta * Cj[j] * gamma[term][k]));
+				nTheta[j][k] = ((pow((1 - rhoTheta), doc->termDict[term])
+						* nTheta[j][k])
+						+ ((1 - pow((1 - rhoTheta), doc->termDict[term]))
+								* Cj[j] * gamma[term][k]));
 			}
 		}
 
@@ -117,21 +116,16 @@ void SCVB0::run(vector<Document> docVector) {
 			int term = iter->first;
 			i += 1;
 //			updateGamma(i, j, term, gamma, nPhi, nTheta, nz, eta, alpha);
-			double sigmaEta = 0.0;
-			for (int a = 0; a < W; a++) {
-				double e = eta[a];
-				sigmaEta += e;
-			}
-			//cout<<"Sigma Eta: "<<sigmaEta<<endl;
 			for (int k = 0; k < K - 1; k++) {
-				gamma[term][k] = ((nPhi[term][k] + eta[term])
-						/ (nz[k] + sigmaEta)) * (nTheta[j][k] + alpha[k]);
-				//cout <<"calc gamma "<<(nz[k] + sigmaEta)<<endl;
+				gamma[term][k] = ((nPhi[term][k] + eta) / (nz[k] + eta * M))
+						* (nTheta[j][k] + alpha);
 			}
 //			updateNTheta(j, term, nTheta, rhoTheta, gamma);
 			for (int k = 0; k < K - 1; k++) {
-				nTheta[j][k] = (((1 - rhoTheta) * nTheta[j][k])
-						+ (rhoTheta * Cj[j] * gamma[term][k]));
+				nTheta[j][k] = ((pow((1 - rhoTheta), doc->termDict[term])
+						* nTheta[j][k])
+						+ ((1 - pow((1 - rhoTheta), doc->termDict[term]))
+								* Cj[j] * gamma[term][k]));
 //			}
 //			for (int k = 0; k < K - 1; k++) {
 				nPhiHat[term][k] += nPhiHat[term][k] + C * gamma[term][k];
@@ -154,7 +148,7 @@ void SCVB0::run(vector<Document> docVector) {
 		nzHat[k] = (C * nzHat[k]) / M;
 		nz[k] = ((1 - rhoPhi) * nz[k]) + (rhoPhi * nzHat[k]);
 	}
-	for (int a = 0; a < d+1; ++a) {
+	for (int a = 0; a < d + 1; ++a) {
 		for (int b = 0; b < K; ++b) {
 			cout << nTheta[a][b] << " ";
 		}
