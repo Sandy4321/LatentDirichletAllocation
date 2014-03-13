@@ -25,24 +25,20 @@ public:
 	intMap Cj; // Number of words in jth Doc
 	int M; //number of documents in Mini-Batch
 
+	float alpha;
+	float eta;
+
 	int s;
 	int tau;
-	double kappa;
+	float kappa;
 	int t;
 
-	double rhoPhi;
-	double rhoTheta;
+	float rhoPhi;
+	float rhoTheta;
 
 	SCVB0(int iter, int numberOfTopics, int vocabSize, int numOfDocs,
 			int corpusSize);
-	virtual ~SCVB0();
 	void run(vector<Document> docVector);
-	/*void updateGamma(int i, int j, int Wij, double *gamma[], double *nPhi[],
-			double *nTheta[], double *nz, double *eta, double *alpha);*/
-	/*void updateNTheta(int j, int Wij, double **nTheta, double rhoTheta,
-			double **gamma);
-	void updateNPhi(double **nPhiHat, double *nPhi, double rhoPhi);
-	void updateNZ(double *nzHat, double *nz, double rhoPhi,double *gamma[W][K]);*/
 };
 
 #endif /* SCVB0_H_ */

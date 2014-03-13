@@ -14,15 +14,7 @@
 #include "LDA.h"
 #include "Document.h"
 #include "SCVB0.h"
-
-LDA::LDA() {
-	numOfDoc = 0;
-	numOfTerms = 0;
-	numOfWordsInCorpus = 0;
-
-	iterations = 0;
-	numOfTopics = 0;
-}
+#include <omp.h>
 
 LDA::LDA(string file, int iter, int topics) {
 	numOfDoc = 0;
@@ -32,10 +24,6 @@ LDA::LDA(string file, int iter, int topics) {
 
 	iterations = iter;
 	numOfTopics = topics;
-}
-
-LDA::~LDA() {
-	// TODO Auto-generated destructor stub
 }
 
 void LDA::parseDataFile() {
@@ -69,6 +57,7 @@ void LDA::parseDataFile() {
 	SCVB0 *scvb0 = new SCVB0(iterations, numOfTopics, numOfTerms, numOfDoc,
 			numOfWordsInCorpus);
 	scvb0->run(docVector);
+	//return tEnd;
 }
 LDA *parseCommandLine(int argv, char *argc[]) {
 	argv--, argc++;
@@ -84,9 +73,10 @@ LDA *parseCommandLine(int argv, char *argc[]) {
 
 int main(int argv, char *argc[]) {
 
-    clock_t tStart = clock();
+    double tStart = omp_get_wtime();
 	LDA *lda = parseCommandLine(argv, argc);
 	lda->parseDataFile();
-	printf("Time taken: %.2fs\n", (double)(clock() - tStart)/CLOCKS_PER_SEC);
+	double tEnd = omp_get_wtime();
+	printf("Time taken: %.2fs\n", (double)(tEnd - tStart));
 	return 0;
 }

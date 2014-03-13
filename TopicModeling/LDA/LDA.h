@@ -8,6 +8,8 @@
 #ifndef LDA_H_
 #define LDA_H_
 
+#include <omp.h>
+
 using namespace std;
 
 class LDA {
@@ -18,9 +20,7 @@ public:
 	int iterations;
 	int numOfTopics;
 	string fileName;
-	LDA();
 	LDA(string fileName, int iter, int topics);
-	virtual ~LDA();
 	int main(int argv, char *argc[]);
 	void parseDataFile();
 };

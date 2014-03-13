@@ -16,7 +16,3 @@ Document::Document(int id, intMap termMap) {
 	termDict = termMap;
 }
 
-Document::~Document() {
-	// TODO Auto-generated destructor stub
-}
-

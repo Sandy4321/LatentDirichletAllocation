@@ -21,7 +21,6 @@ public:
 	intMap termDict;
 	Document();
 	Document(int id, intMap termMap);
-	virtual ~Document();
 };
 
 #endif /* DOCUMENT_H_ */
