@@ -10,6 +10,7 @@
 
 #include <vector>
 #include "Document.h"
+#include "MiniBatch.h"
 #include <iostream>
 
 using namespace std;
@@ -38,7 +39,7 @@ public:
 
 	SCVB0(int iter, int numberOfTopics, int vocabSize, int numOfDocs,
 			int corpusSize);
-	void run(vector<Document> docVector);
+	void run(MiniBatch miniBatch);
 };
 
 #endif /* SCVB0_H_ */

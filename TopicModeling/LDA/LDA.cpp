@@ -14,6 +14,7 @@
 #include "LDA.h"
 #include "Document.h"
 #include "SCVB0.h"
+#include "MiniBatch.h"
 #include <omp.h>
 
 LDA::LDA(string file, int iter, int topics) {
@@ -27,62 +28,68 @@ LDA::LDA(string file, int iter, int topics) {
 }
 
 void LDA::parseDataFile() {
-	ifstream infile(fileName.c_str());
+	ifstream inputfile(fileName.c_str());
 
 	int nProcessors = omp_get_max_threads();
 	omp_set_num_threads(nProcessors);
 	int numOfMiniBatches = nProcessors;
-	std::vector<Document> *miniBatches[numOfMiniBatches];
-	int batchSize = (int) numOfDoc / (numOfMiniBatches);
+	MiniBatch *miniBatches[numOfMiniBatches];
 	for (int c = 0; c < numOfMiniBatches; ++c) {
-		miniBatches[c] = new vector<Document>();
+		miniBatches[c] = new MiniBatch();
 	}
 
-	infile >> numOfDoc;
-	infile >> numOfTerms;
-	infile >> numOfWordsInCorpus;
+	inputfile >> numOfDoc;
+	inputfile >> numOfTerms;
+	inputfile >> numOfWordsInCorpus;
 	cout << numOfDoc << " " << numOfTerms << " " << numOfWordsInCorpus << endl;
 	cout << "--------------------" << endl;
-	int docId, wordId, freq;
-	int eof = 0;
-	if (!(infile >> docId >> wordId >> freq)) {
-		eof = 1;
-	}
+
+	int batchSize = (int) numOfDoc / (numOfMiniBatches);
 	int a = 0;
-#pragma omp parallel for shared(a) private(infile)
+#pragma omp parallel for shared(a)
 	for (a = 0; a < numOfMiniBatches; ++a) {
-		int miniBatchStartDoc = batchSize * a;
+		int docId, wordId, freq;
+		ifstream infile(fileName.c_str());
+		int x, y, z;
+		infile >> x;
+		infile >> y;
+		infile >> z;
+		int eof = 0;
+		if (!(infile >> docId >> wordId >> freq)) {
+			eof = 1;
+		}
+		int miniBatchStartDoc = (batchSize * a) + 1;
 		while (docId != miniBatchStartDoc) {
 			infile >> docId >> wordId >> freq;
 		}
-		std::vector<Document> *docVector = miniBatches[a];
-		while (!eof) {
+		MiniBatch *nextBatch = miniBatches[a];
+		nextBatch->M = 0;
+		std::vector<Document> *docVector = nextBatch->docVector;
+		while (!eof && (docId < miniBatchStartDoc + batchSize)) {
 			intMap termMap;
 			int oldDocId = docId;
+			int Cj = 0;
 			while (docId == oldDocId) {
-				//			cout << docId << " " << wordId << " " << freq << endl;
 				termMap[wordId] = freq;
+				Cj += freq;
 				if (!(infile >> docId >> wordId >> freq)) {
 					eof = 1;
 					break;
 				}
 			}
 			Document *newDoc = new Document(oldDocId, termMap);
+			nextBatch->Cj[oldDocId] = Cj;
+			nextBatch->M += Cj;
 			docVector->push_back(*newDoc);
 		}
-
 	}
 	int b = 0;
+#pragma omp parallel for shared(b)
 	for (b = 0; b < numOfMiniBatches; ++b) {
-		std::vector<Document> *docVector = miniBatches[a];
-		for (int i = 0; i < (int) docVector->size(); i++) {
-			//Document *D = docVector[i];
-		}
-//		SCVB0 *scvb0 = new SCVB0(iterations, numOfTopics, numOfTerms, numOfDoc,
-//				numOfWordsInCorpus);
-//		scvb0->run(*miniBatches[b]);
+		MiniBatch *minibatch = miniBatches[b];
+		SCVB0 *scvb0 = new SCVB0(iterations, numOfTopics, numOfTerms, numOfDoc,	numOfWordsInCorpus);
+		scvb0->run(*minibatch);
 	}
-	//return tEnd;
 }
 LDA *parseCommandLine(int argv, char *argc[]) {
 	argv--, argc++;
