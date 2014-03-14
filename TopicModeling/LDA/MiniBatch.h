@@ -17,9 +17,8 @@ class MiniBatch {
 public:
 	int M;
 	vector<Document> *docVector;
-	intMap Cj;
 	MiniBatch();
-	MiniBatch(int m, vector<Document> *documentVector, intMap docSizes);
+	MiniBatch(int m, vector<Document> *documentVector);
 	virtual ~MiniBatch();
 };
 

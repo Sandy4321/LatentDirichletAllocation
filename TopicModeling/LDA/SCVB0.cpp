@@ -68,7 +68,7 @@ bool wayToSort(int i, int j) {
 
 void SCVB0::run(MiniBatch miniBatch) {
 	vector<Document> docVector = *miniBatch.docVector;
-//	cout << "MiniBatchSize: " << miniBatch.M << endl;
+	cout << "MiniBatchSize: " << miniBatch.M << endl;
 
 	double **nPhiHat = new double*[W + 1];
 	double *nzHat = new double[K];
@@ -93,31 +93,23 @@ void SCVB0::run(MiniBatch miniBatch) {
 			int k = 0;
 //#pragma omp parallel for shared(k, j)
 			for (k = 0; k < K; k++) {
-				gamma[term][k] = ((nPhi[term][k] + eta)
-						/ (nz[k] + eta * miniBatch.M))
-						* (nTheta[doc.docId][k] + alpha);
+				gamma[term][k] = ((nPhi[term][k] + eta) / (nz[k] + eta * miniBatch.M)) * (nTheta[doc.docId][k] + alpha);
 
-				nTheta[j][k] = ((pow((1 - rhoTheta), doc.termDict[term])
-						* nTheta[j][k])
-						+ ((1 - pow((1 - rhoTheta), doc.termDict[term]))
-								* miniBatch.Cj[j] * gamma[term][k]));
+				nTheta[doc.docId][k] = ((pow((1 - rhoTheta), doc.termDict[term]) * nTheta[doc.docId][k])
+						+ ((1 - pow((1 - rhoTheta), doc.termDict[term])) * doc.Cj * gamma[term][k]));
 			}
 		}
 
-		for (map<int, int>::iterator iter = doc.termDict.begin();
-				iter != doc.termDict.end(); ++iter) {
+		for (map<int, int>::iterator iter = doc.termDict.begin(); iter != doc.termDict.end(); ++iter) {
 			int term = iter->first;
 			int k = 0;
 //#pragma omp parallel for shared(k, j)
 			for (k = 0; k < K; k++) {
-				gamma[term][k] = ((nPhi[term][k] + eta)
-						/ (nz[k] + eta * miniBatch.M))
-						* (nTheta[doc.docId][k] + alpha);
+				gamma[term][k] = ((nPhi[term][k] + eta)	/ (nz[k] + eta * miniBatch.M)) * (nTheta[doc.docId][k] + alpha);
 
-				nTheta[doc.docId][k] = ((pow((1 - rhoTheta), doc.termDict[term])
-						* nTheta[doc.docId][k])
-						+ ((1 - pow((1 - rhoTheta), doc.termDict[term]))
-								* miniBatch.Cj[j] * gamma[term][k]));
+				nTheta[doc.docId][k] = ((pow((1 - rhoTheta), doc.termDict[term]) * nTheta[doc.docId][k])
+						+ ((1 - pow((1 - rhoTheta), doc.termDict[term])) * doc.Cj * gamma[term][k]));
+
 				nPhiHat[term][k] += nPhiHat[term][k] + C * gamma[term][k];
 				nzHat[k] += nzHat[k] + C * gamma[term][k];
 			}
@@ -129,7 +121,7 @@ void SCVB0::run(MiniBatch miniBatch) {
 	int w = 0;
 //#pragma omp parallel for shared(k) private(w)
 	for (k = 0; k < K; k++) {
-		for (w = 0; w < W; w++) {
+		for (w = 1; w < W + 1; w++) {
 			nPhiHat[w][k] = (C * gamma[w][k]) / miniBatch.M;
 			nPhi[w][k] = ((1 - rhoPhi) * nPhi[w][k]) + (rhoPhi * nPhiHat[w][k]);
 			nzHat[k] = nzHat[k] + gamma[w][k];

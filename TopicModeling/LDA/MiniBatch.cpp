@@ -7,11 +7,9 @@
 
 #include "MiniBatch.h"
 
-MiniBatch::MiniBatch(int m, vector<Document> *documentVector,
-		intMap docSizes) {
+MiniBatch::MiniBatch(int m, vector<Document> *documentVector) {
 	M = m;
 	docVector = documentVector;
-	Cj = docSizes;
 }
 
 MiniBatch::MiniBatch() {

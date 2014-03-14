@@ -18,6 +18,7 @@ typedef std::map<int,int> intMap;
 class Document {
 public:
 	int docId;
+	int Cj;
 	intMap termDict;
 	Document();
 	Document(int id, intMap termMap);

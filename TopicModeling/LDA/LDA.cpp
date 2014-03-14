@@ -78,7 +78,7 @@ void LDA::parseDataFile() {
 				}
 			}
 			Document *newDoc = new Document(oldDocId, termMap);
-			nextBatch->Cj[oldDocId] = Cj;
+			newDoc->Cj = Cj;
 			nextBatch->M += Cj;
 			docVector->push_back(*newDoc);
 		}
@@ -93,6 +93,7 @@ void LDA::parseDataFile() {
 	}
 	for (int a = 1; a < scvb0->D + 1; ++a) {
 		//std::sort(nTheta[a], nTheta[a] + K - 1);
+		cout << a << endl;
 		for (int b = 0; b < scvb0->K; ++b) {
 			cout << scvb0->nTheta[a][b] << " ";
 		}
