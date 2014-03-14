@@ -84,11 +84,19 @@ void LDA::parseDataFile() {
 		}
 	}
 	int b = 0;
+	SCVB0 *scvb0 = new SCVB0(iterations, numOfTopics, numOfTerms, numOfDoc,
+			numOfWordsInCorpus);
 #pragma omp parallel for shared(b)
 	for (b = 0; b < numOfMiniBatches; ++b) {
 		MiniBatch *minibatch = miniBatches[b];
-		SCVB0 *scvb0 = new SCVB0(iterations, numOfTopics, numOfTerms, numOfDoc,	numOfWordsInCorpus);
 		scvb0->run(*minibatch);
+	}
+	for (int a = 1; a < scvb0->D + 1; ++a) {
+		//std::sort(nTheta[a], nTheta[a] + K - 1);
+		for (int b = 0; b < scvb0->K; ++b) {
+			cout << scvb0->nTheta[a][b] << " ";
+		}
+		cout << endl;
 	}
 }
 LDA *parseCommandLine(int argv, char *argc[]) {

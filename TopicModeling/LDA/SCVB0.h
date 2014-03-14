@@ -21,21 +21,22 @@ public:
 	int K; //Number of Topics
 	int W; //no of terms in vocab
 	int D; //Total no of docs in corpus
-	int d; //Number of documents to be processed by each mini-batch
 	int C; //Total no of words in corpus
-	intMap Cj; // Number of words in jth Doc
-	int M; //number of documents in Mini-Batch
 
-	float alpha;
-	float eta;
+	double **nPhi;
+	double **nTheta;
+	double *nz;
+
+	double alpha;
+	double eta;
 
 	int s;
 	int tau;
-	float kappa;
+	double kappa;
 	int t;
 
-	float rhoPhi;
-	float rhoTheta;
+	double rhoPhi;
+	double rhoTheta;
 
 	SCVB0(int iter, int numberOfTopics, int vocabSize, int numOfDocs,
 			int corpusSize);

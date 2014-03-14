@@ -19,27 +19,22 @@ using namespace std;
 SCVB0::SCVB0(int iter, int numberOfTopics, int vocabSize, int numOfDocs,
 		int corpusSize) {
 	iterations = iter;
-//	K = numberOfTopics;
-//	W = vocabSize;
-//	D = numOfDocs;
-//	d = D / 6; //Assuming number of cores = 6
-//	C = corpusSize;
+	K = numberOfTopics;
+	W = vocabSize;
+	D = numOfDocs;
+	C = corpusSize;
 
 //For KOS
-	K = 40;
-	W = 6906;
-	D = 3430;
-	d = 3430; //Assuming number of cores = 6
-	C = 353160;
+//	K = 40;
+//	W = 6906;
+//	D = 3430;
+//	C = 353160;
 
 //For NYT
 //	K = 10;
 //	W = 102660;
 //	D = 300000;
-//	d = 300000; //Assuming number of cores = 6
 //	C = 69679427;
-
-	M = 0;
 
 	s = 10;
 	tau = 1000;
@@ -51,6 +46,20 @@ SCVB0::SCVB0(int iter, int numberOfTopics, int vocabSize, int numOfDocs,
 
 	rhoPhi = s / pow((tau + t), kappa);
 	rhoTheta = s / pow((tau + t), kappa);
+
+	nPhi = new double*[W + 1];
+	nTheta = new double*[D + 1];
+	nz = new double[K];
+
+	for (int w = 0; w < W + 1; w++) {
+		nPhi[w] = new double[K];
+		memset(nPhi[w], 0, sizeof(nPhi[w]));
+	}
+	for (int d = 0; d < D + 1; d++) {
+		nTheta[d] = new double[K];
+		memset(nTheta[d], 0, sizeof(nTheta[d]));
+	}
+	memset(nz, 0, sizeof(nz));
 }
 
 bool wayToSort(int i, int j) {
@@ -61,26 +70,18 @@ void SCVB0::run(MiniBatch miniBatch) {
 	vector<Document> docVector = *miniBatch.docVector;
 //	cout << "MiniBatchSize: " << miniBatch.M << endl;
 
-	float nPhi[W][K];
-	float nTheta[d + 1][K];
-	float nz[K];
+	double **nPhiHat = new double*[W + 1];
+	double *nzHat = new double[K];
+	double **gamma = new double*[W + 1];
 
-	memset(nPhi, 0.0, sizeof nPhi);
-	memset(nTheta, 0.0, sizeof nTheta);
-	memset(nz, 0.0, sizeof nz);
+	for (int w = 0; w < W + 1; ++w) {
+		nPhiHat[w] = new double[K];
+		gamma[w] = new double[K];
 
-	//For each mini-batch
-	M = miniBatch.M;
-	Cj = miniBatch.Cj;
-
-	float nPhiHat[W][K];
-	float nzHat[K];
-
-	float gamma[W][K];
-
-	memset(nPhiHat, 0, sizeof nPhiHat);
-	memset(nzHat, 0, sizeof nzHat);
-	memset(gamma, 0, sizeof gamma);
+		memset(nPhiHat[w], 0, sizeof(nPhiHat[w]));
+		memset(gamma[w], 0, sizeof(gamma[w]));
+	}
+	memset(nzHat, 0, sizeof(nzHat));
 
 	// This is where original run method starts
 	int j = 1;
@@ -92,13 +93,14 @@ void SCVB0::run(MiniBatch miniBatch) {
 			int k = 0;
 //#pragma omp parallel for shared(k, j)
 			for (k = 0; k < K; k++) {
-				gamma[term][k] = ((nPhi[term][k] + eta) / (nz[k] + eta * M))
-						* (nTheta[j][k] + alpha);
+				gamma[term][k] = ((nPhi[term][k] + eta)
+						/ (nz[k] + eta * miniBatch.M))
+						* (nTheta[doc.docId][k] + alpha);
 
 				nTheta[j][k] = ((pow((1 - rhoTheta), doc.termDict[term])
 						* nTheta[j][k])
-						+ ((1 - pow((1 - rhoTheta), doc.termDict[term])) * Cj[j]
-								* gamma[term][k]));
+						+ ((1 - pow((1 - rhoTheta), doc.termDict[term]))
+								* miniBatch.Cj[j] * gamma[term][k]));
 			}
 		}
 
@@ -108,13 +110,14 @@ void SCVB0::run(MiniBatch miniBatch) {
 			int k = 0;
 //#pragma omp parallel for shared(k, j)
 			for (k = 0; k < K; k++) {
-				gamma[term][k] = ((nPhi[term][k] + eta) / (nz[k] + eta * M))
-						* (nTheta[j][k] + alpha);
+				gamma[term][k] = ((nPhi[term][k] + eta)
+						/ (nz[k] + eta * miniBatch.M))
+						* (nTheta[doc.docId][k] + alpha);
 
-				nTheta[j][k] = ((pow((1 - rhoTheta), doc.termDict[term])
-						* nTheta[j][k])
-						+ ((1 - pow((1 - rhoTheta), doc.termDict[term])) * Cj[j]
-								* gamma[term][k]));
+				nTheta[doc.docId][k] = ((pow((1 - rhoTheta), doc.termDict[term])
+						* nTheta[doc.docId][k])
+						+ ((1 - pow((1 - rhoTheta), doc.termDict[term]))
+								* miniBatch.Cj[j] * gamma[term][k]));
 				nPhiHat[term][k] += nPhiHat[term][k] + C * gamma[term][k];
 				nzHat[k] += nzHat[k] + C * gamma[term][k];
 			}
@@ -127,18 +130,11 @@ void SCVB0::run(MiniBatch miniBatch) {
 //#pragma omp parallel for shared(k) private(w)
 	for (k = 0; k < K; k++) {
 		for (w = 0; w < W; w++) {
-			nPhiHat[w][k] = (C * gamma[w][k]) / M;
+			nPhiHat[w][k] = (C * gamma[w][k]) / miniBatch.M;
 			nPhi[w][k] = ((1 - rhoPhi) * nPhi[w][k]) + (rhoPhi * nPhiHat[w][k]);
 			nzHat[k] = nzHat[k] + gamma[w][k];
 		}
-		nzHat[k] = (C * nzHat[k]) / M;
+		nzHat[k] = (C * nzHat[k]) / miniBatch.M;
 		nz[k] = ((1 - rhoPhi) * nz[k]) + (rhoPhi * nzHat[k]);
-	}
-	for (int a = 1; a < d + 1; ++a) {
-		//std::sort(nTheta[a], nTheta[a] + K - 1);
-		for (int b = 0; b < K; ++b) {
-			cout << nTheta[a][b] << " ";
-		}
-		cout << endl;
 	}
 }
