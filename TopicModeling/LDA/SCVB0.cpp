@@ -69,7 +69,7 @@ SCVB0::~SCVB0() {
 
 void SCVB0::run(MiniBatch miniBatch) {
 	vector<Document> docVector = *miniBatch.docVector;
-	cout << "MiniBatchSize: " << miniBatch.M << endl;
+//	cout << "MiniBatchSize: " << miniBatch.M << endl;
 
 	double **nPhiHat = new double*[W + 1];
 	double *nzHat = new double[K];

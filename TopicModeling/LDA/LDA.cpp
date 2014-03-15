@@ -105,18 +105,20 @@ void LDA::parseDataFile() {
 		MiniBatch *minibatch = miniBatches[b];
 		scvb0->run(*minibatch);
 	}
-	for (int a = 1; a < scvb0->D + 1; ++a) {
-		//std::sort(nTheta[a], nTheta[a] + K - 1);
-		cout << a << endl;
-		for (int b = 0; b < scvb0->K; ++b) {
-			cout << scvb0->nTheta[a][b] << " ";
-		}
-		cout << endl;
-	}
+//	for (int a = 1; a < scvb0->D + 1; ++a) {
+//		//std::sort(nTheta[a], nTheta[a] + K - 1);
+//		cout << a << endl;
+//		for (int b = 0; b < scvb0->K; ++b) {
+//			cout << scvb0->nTheta[a][b] << " ";
+//		}
+//		cout << endl;
+//	}
+
+	cout << "Writing results to file" << endl;
 	vector<Term> *termVector = new vector<Term>();
 	//Reading the Vocab file
 	ifstream myVocabFile;
-	myVocabFile.open("vocab.kos.txt");
+	myVocabFile.open("vocab.nytimes.txt");
 	int wordId = 1;
 	string word;
 	int eof = 0;
@@ -129,52 +131,60 @@ void LDA::parseDataFile() {
 		termVector->push_back(*term);
 		wordId++;
 	}
-	//Writing the output to the files
-	ofstream myFile;
+	int p = 0;
+#pragma omp parallel for shared(p)
+	for (p = 0; p < 2; p++) {
+		if (p == 0) {
+			//Writing the output to the files
+			ofstream myFile;
 
-	myFile.open("doctopic.txt");
-	// Each document with its topic allocation
+			myFile.open("doctopic.txt");
+			// Each document with its topic allocation
 
-	for (int a = 1; a < scvb0->D + 1; ++a) {
-		myFile << "Document " << a << " : ";
-		//std::sort(nTheta[a], nTheta[a] + K - 1);
-		for (int b = 0; b < scvb0->K; b++) {
-			myFile << scvb0->nTheta[a][b] << " ";
-		}
-		myFile << endl;
-	}
-	for (std::vector<Term>::iterator it = termVector->begin();
-			it != termVector->end(); it++) {
-		Term t = *it;
-		for (int a = 0; a < scvb0->K; a++) {
-			t.prob->push_back(scvb0->nPhi[t.wordId][a]);
+			for (int a = 1; a < scvb0->D + 1; ++a) {
+				myFile << "Document " << a << " : ";
+				//std::sort(nTheta[a], nTheta[a] + K - 1);
+				for (int b = 0; b < scvb0->K; b++) {
+					myFile << scvb0->nTheta[a][b] << " ";
+				}
+				myFile << endl;
+			}
+			myFile.close();
+		} else {
+
+			for (std::vector<Term>::iterator it = termVector->begin();
+					it != termVector->end(); it++) {
+				Term t = *it;
+				for (int a = 0; a < scvb0->K; a++) {
+					t.prob->push_back(scvb0->nPhi[t.wordId][a]);
+				}
+			}
+
+			ofstream topicFile;
+			topicFile.open("topic.txt");
+			int counter = 1;
+			for (int a = 0; a < numOfTopics; a++) {
+				myobject.currTopic = a;
+				std::sort(termVector->begin(), termVector->end(), myobject);
+				topicFile << "Topic " << a + 1 << " : " << endl;
+				counter = 1;
+				for (std::vector<Term>::iterator it = termVector->begin();
+						it != termVector->end(); it++) {
+					if (counter < 21) {
+						Term t = *it;
+						topicFile << t.word << " " << (*t.prob)[a] << endl;
+					} else {
+						break;
+					}
+					counter++;
+				}
+				topicFile << endl;
+			}
+			topicFile.close();
 		}
 	}
 
 	delete scvb0;
-
-	myFile.close();
-	ofstream topicFile;
-	topicFile.open("topic.txt");
-	int counter = 1;
-	for (int a = 0; a < numOfTopics; a++) {
-		myobject.currTopic = a;
-		std::sort(termVector->begin(), termVector->end(), myobject);
-		topicFile << "Topic " << a + 1 << " : " << endl;
-		counter = 1;
-		for (std::vector<Term>::iterator it = termVector->begin();
-				it != termVector->end(); it++) {
-			if (counter < 21) {
-				Term t = *it;
-				topicFile << t.word << " " << (*t.prob)[a] << endl;
-			} else {
-				break;
-			}
-			counter++;
-		}
-		topicFile << endl;
-	}
-	topicFile.close();
 }
 LDA *parseCommandLine(int argv, char *argc[]) {
 	argv--, argc++;
@@ -195,6 +205,7 @@ int main(int argv, char *argc[]) {
 	lda->parseDataFile();
 	delete lda;
 	double tEnd = omp_get_wtime();
+	cout << "Done." << endl;
 	printf("Time taken: %.2fs\n", (double) (tEnd - tStart));
 	return 0;
 }
