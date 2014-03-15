@@ -116,4 +116,6 @@ void SCVB0::run(MiniBatch miniBatch) {
 		nzHat[k] = (C * nzHat[k]) / miniBatch.M;
 		nz[k] = ((1 - rhoPhi) * nz[k]) + (rhoPhi * nzHat[k]);
 	}
+
+	
 }

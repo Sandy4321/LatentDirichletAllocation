@@ -16,6 +16,7 @@
 #include "SCVB0.h"
 #include "MiniBatch.h"
 #include <omp.h>
+#include <fstream>
 
 LDA::LDA(string file, int iter, int topics) {
 	numOfDoc = 0;
@@ -87,7 +88,7 @@ void LDA::parseDataFile() {
 	int b = 0;
 	SCVB0 *scvb0 = new SCVB0(iterations, numOfTopics, numOfTerms, numOfDoc,
 			numOfWordsInCorpus);
-#pragma omp parallel for shared(b)
+//#pragma omp parallel for shared(b)
 	for (b = 0; b < numOfMiniBatches; ++b) {
 		MiniBatch *minibatch = miniBatches[b];
 		scvb0->run(*minibatch);
@@ -100,6 +101,30 @@ void LDA::parseDataFile() {
 		}
 		cout << endl;
 	}
+	//Writing the output to the files
+	ofstream myFile;
+	
+	myFile.open("doctopic.txt");	
+	// Each document with its topic allocation
+	
+	for (int a = 1; a < scvb0->D + 1; ++a) {
+		myFile <<"Document "<<a<<" : ";
+		//std::sort(nTheta[a], nTheta[a] + K - 1);
+		for (int b = 0; b < scvb0->K; ++b) {
+			myFile << scvb0->nTheta[a][b] << " ";
+		}
+		myFile << endl;
+	}
+	myFile.close();
+	myFile.open("topic.txt");
+	for (int b = 0; b < scvb0->K; ++b) {
+		myFile <<"\n Topic "<<b+1<<" : ";
+		for (int a = 1; a < 20; ++a) {
+			myFile << scvb0->nPhi[a][b] << " ";
+		}
+		myFile << endl;
+	}
+	myFile.close();
 }
 LDA *parseCommandLine(int argv, char *argc[]) {
 	argv--, argc++;
