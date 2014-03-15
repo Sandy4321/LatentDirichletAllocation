@@ -38,23 +38,33 @@ SCVB0::SCVB0(int iter, int numberOfTopics, int vocabSize, int numOfDocs,
 	nPhi = new double*[W + 1];
 	nTheta = new double*[D + 1];
 	nz = new double[K];
+	memset(nz, 0, sizeof(nz));
 
 	for (int w = 0; w < W + 1; w++) {
 		nPhi[w] = new double[K];
-//		memset(nPhi[w], 0, sizeof(nPhi[w]));
 		for (int k = 0; k < K; ++k) {
-			nPhi[w][k] = (double)(rand() % 100);
-			cout<<nPhi[w][k];
+			nPhi[w][k] = ((double) (rand() % (W * K))) / (W * K);
+			nz[k] += nPhi[w][k];
 		}
 	}
 	for (int d = 0; d < D + 1; d++) {
 		nTheta[d] = new double[K];
-//		memset(nTheta[d], 0, sizeof(nTheta[d]));
 		for (int k = 0; k < K; ++k) {
-			nTheta[d][k] = (double)(rand() % 100);
+			nTheta[d][k] = ((double) (rand() % (D * K))) / (D * K);
 		}
 	}
-	memset(nz, 0, sizeof(nz));
+}
+
+SCVB0::~SCVB0() {
+	for (int w = 0; w < W + 1; w++) {
+		delete[] (nPhi[w]);
+	}
+	for (int d = 0; d < D + 1; d++) {
+		delete[] (nTheta[d]);
+	}
+	delete[] (nPhi);
+	delete[] (nTheta);
+	delete[] (nz);
 }
 
 void SCVB0::run(MiniBatch miniBatch) {
@@ -85,7 +95,6 @@ void SCVB0::run(MiniBatch miniBatch) {
 
 				nTheta[doc.docId][k] = ((pow((1 - rhoTheta), doc.termDict[term]) * nTheta[doc.docId][k])
 						+ ((1 - pow((1 - rhoTheta), doc.termDict[term])) * doc.Cj * gamma[term][k]));
-				//cout<<" \n doc is "<<doc.docId<<" term is "<<term<< " Gamma is "<<gamma[term][k]<<" Theta is "<<nTheta[doc.docId][k];
 			}
 		}
 
@@ -104,15 +113,17 @@ void SCVB0::run(MiniBatch miniBatch) {
 		}
 	}
 
-	for (int w = 0; w < W + 1; w++) {
-		free(gamma[w]);
-	}
-	free(gamma);
 	for (int k = 0; k < K; k++) {
 		for (int w = 1; w < W + 1; w++) {
 			nPhi[w][k] = ((1 - rhoPhi) * nPhi[w][k]) + (rhoPhi * nPhiHat[w][k]);
 		}
 		nz[k] = ((1 - rhoPhi) * nz[k]) + (rhoPhi * nzHat[k]);
 	}
-	
+	for (int w = 0; w < W + 1; w++) {
+		delete[](gamma[w]);
+		delete[](nPhiHat[w]);
+	}
+	delete[](nPhiHat);
+	delete[](gamma);
+	delete[](nzHat);
 }

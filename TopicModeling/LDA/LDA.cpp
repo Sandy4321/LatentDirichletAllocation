@@ -20,12 +20,13 @@
 #include <fstream>
 #include <algorithm>
 
-int currK = 0;
 struct myclass {
+	int currTopic;
 	bool operator()(Term i, Term j) {
-		return ((*i.prob)[currK] > (*j.prob)[currK]);
+		return ((*i.prob)[currTopic] > (*j.prob)[currTopic]);
 	}
 } myobject;
+
 LDA::LDA(string file, int iter, int topics) {
 	numOfDoc = 0;
 	numOfTerms = 0;
@@ -41,8 +42,7 @@ void LDA::parseDataFile() {
 
 	int nProcessors = omp_get_max_threads();
 	omp_set_num_threads(nProcessors);
-	int numOfMiniBatches = 1;
-	//int numOfMiniBatches = nProcessors;
+	int numOfMiniBatches = nProcessors;
 	MiniBatch *miniBatches[numOfMiniBatches];
 	for (int c = 0; c < numOfMiniBatches; ++c) {
 		miniBatches[c] = new MiniBatch();
@@ -77,7 +77,6 @@ void LDA::parseDataFile() {
 				<< docId + batchSize - 1 << endl;
 		MiniBatch *nextBatch = miniBatches[a];
 		nextBatch->M = 0;
-		cout << "First document is " << docId;
 		std::vector<Document> *docVector = nextBatch->docVector;
 		while (!eof && (docId < miniBatchStartDoc + batchSize)) {
 			intMap termMap;
@@ -130,7 +129,6 @@ void LDA::parseDataFile() {
 		termVector->push_back(*term);
 		wordId++;
 	}
-	cout << " Term Vector length is " << termVector->size();
 	//Writing the output to the files
 	ofstream myFile;
 
@@ -145,30 +143,38 @@ void LDA::parseDataFile() {
 		}
 		myFile << endl;
 	}
-	for (int b = 1; b < (scvb0->W) + 1; b++) {
+	for (std::vector<Term>::iterator it = termVector->begin();
+			it != termVector->end(); it++) {
+		Term t = *it;
 		for (int a = 0; a < scvb0->K; a++) {
-			if (b == 6906) {
-				cout << "second " << b << " " << a << " " << scvb0->nPhi[b][a]
-						<< endl;
-			}
-			(*termVector)[b].prob->push_back(scvb0->nPhi[b][a]);
+			t.prob->push_back(scvb0->nPhi[t.wordId][a]);
 		}
 	}
 
+	delete scvb0;
+
 	myFile.close();
-	myFile.open("");
-	myFile.open("topic.txt");
-	for (int b = 0; b < scvb0->K; ++b) {
-		currK = b;
+	ofstream topicFile;
+	topicFile.open("topic.txt");
+	int counter = 1;
+	for (int a = 0; a < numOfTopics; a++) {
+		myobject.currTopic = a;
 		std::sort(termVector->begin(), termVector->end(), myobject);
-		myFile << "\n Topic " << b + 1 << " : ";
-		for (int a = 1; a < 21; a++) {
-			myFile << " Word Id : " << (*termVector)[a].wordId << " "
-					<< (*((*termVector)[a].prob))[b] << "\n";
+		topicFile << "Topic " << a + 1 << " : " << endl;
+		counter = 1;
+		for (std::vector<Term>::iterator it = termVector->begin();
+				it != termVector->end(); it++) {
+			if (counter < 21) {
+				Term t = *it;
+				topicFile << t.word << " " << (*t.prob)[a] << endl;
+			} else {
+				break;
+			}
+			counter++;
 		}
-		myFile << endl;
+		topicFile << endl;
 	}
-	myFile.close();
+	topicFile.close();
 }
 LDA *parseCommandLine(int argv, char *argc[]) {
 	argv--, argc++;
@@ -187,6 +193,7 @@ int main(int argv, char *argc[]) {
 	double tStart = omp_get_wtime();
 	LDA *lda = parseCommandLine(argv, argc);
 	lda->parseDataFile();
+	delete lda;
 	double tEnd = omp_get_wtime();
 	printf("Time taken: %.2fs\n", (double) (tEnd - tStart));
 	return 0;

@@ -40,6 +40,7 @@ public:
 
 	SCVB0(int iter, int numberOfTopics, int vocabSize, int numOfDocs,
 			int corpusSize);
+	virtual ~SCVB0();
 	void run(MiniBatch miniBatch);
 };
 

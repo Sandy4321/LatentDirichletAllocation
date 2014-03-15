@@ -6,6 +6,7 @@
  */
 
 #include "Term.h"
+#include "SCVB0.h"
 #include <string>
 #include <vector>
 
@@ -14,3 +15,4 @@ Term::Term(int id, string vocabWord) {
 	word = vocabWord;
 	prob = new vector<double>();
 }
+

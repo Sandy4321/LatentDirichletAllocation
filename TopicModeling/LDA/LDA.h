@@ -28,7 +28,6 @@ public:
 	LDA(string fileName, int iter, int topics);
 	int main(int argv, char *argc[]);
 	void parseDataFile();
-	bool myCompFunction(Term i, Term j);
 };
 
 #endif /* LDA_H_ */
