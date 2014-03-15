@@ -62,6 +62,7 @@ void LDA::parseDataFile() {
 		while (docId != miniBatchStartDoc) {
 			infile >> docId >> wordId >> freq;
 		}
+		cout<<"Minibatch starts at: "<<docId<<" MiniBatch Ends at: "<< docId+ batchSize-1<<endl;
 		MiniBatch *nextBatch = miniBatches[a];
 		nextBatch->M = 0;
 		std::vector<Document> *docVector = nextBatch->docVector;

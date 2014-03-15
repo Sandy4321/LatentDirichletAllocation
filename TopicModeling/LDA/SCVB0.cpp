@@ -24,18 +24,6 @@ SCVB0::SCVB0(int iter, int numberOfTopics, int vocabSize, int numOfDocs,
 	D = numOfDocs;
 	C = corpusSize;
 
-//For KOS
-//	K = 40;
-//	W = 6906;
-//	D = 3430;
-//	C = 353160;
-
-//For NYT
-//	K = 10;
-//	W = 102660;
-//	D = 300000;
-//	C = 69679427;
-
 	s = 10;
 	tau = 1000;
 	kappa = 0.9;
@@ -87,8 +75,7 @@ void SCVB0::run(MiniBatch miniBatch) {
 	int j = 1;
 	for (j = 1; j <= (int) docVector.size(); j++) {
 		Document doc = docVector[j];
-		for (map<int, int>::iterator iter = doc.termDict.begin();
-				iter != doc.termDict.end(); ++iter) {
+		for (map<int, int>::iterator iter = doc.termDict.begin(); iter != doc.termDict.end(); ++iter) {
 			int term = iter->first;
 			int k = 0;
 //#pragma omp parallel for shared(k, j)
