@@ -33,7 +33,8 @@ void LDA::parseDataFile() {
 
 	int nProcessors = omp_get_max_threads();
 	omp_set_num_threads(nProcessors);
-	int numOfMiniBatches = nProcessors;
+	int numOfMiniBatches = 1;
+	//int numOfMiniBatches = nProcessors;
 	MiniBatch *miniBatches[numOfMiniBatches];
 	for (int c = 0; c < numOfMiniBatches; ++c) {
 		miniBatches[c] = new MiniBatch();
@@ -45,6 +46,7 @@ void LDA::parseDataFile() {
 	cout << numOfDoc << " " << numOfTerms << " " << numOfWordsInCorpus << endl;
 	cout << "--------------------" << endl;
 
+	inputfile.close();
 	int batchSize = (int) numOfDoc / (numOfMiniBatches);
 	int a = 0;
 #pragma omp parallel for shared(a)
@@ -66,6 +68,7 @@ void LDA::parseDataFile() {
 		cout<<"Minibatch starts at: "<<docId<<" MiniBatch Ends at: "<< docId+ batchSize-1<<endl;
 		MiniBatch *nextBatch = miniBatches[a];
 		nextBatch->M = 0;
+		cout<<"First document is "<<docId;
 		std::vector<Document> *docVector = nextBatch->docVector;
 		while (!eof && (docId < miniBatchStartDoc + batchSize)) {
 			intMap termMap;
@@ -84,11 +87,12 @@ void LDA::parseDataFile() {
 			nextBatch->M += Cj;
 			docVector->push_back(*newDoc);
 		}
+		infile.close();
 	}
 	int b = 0;
 	SCVB0 *scvb0 = new SCVB0(iterations, numOfTopics, numOfTerms, numOfDoc,
 			numOfWordsInCorpus);
-//#pragma omp parallel for shared(b)
+#pragma omp parallel for shared(b)
 	for (b = 0; b < numOfMiniBatches; ++b) {
 		MiniBatch *minibatch = miniBatches[b];
 		scvb0->run(*minibatch);
@@ -103,12 +107,12 @@ void LDA::parseDataFile() {
 	}
 	//Writing the output to the files
 	ofstream myFile;
-	
-	myFile.open("doctopic.txt");	
+
+	myFile.open("doctopic.txt");
 	// Each document with its topic allocation
-	
+
 	for (int a = 1; a < scvb0->D + 1; ++a) {
-		myFile <<"Document "<<a<<" : ";
+		myFile << "Document " << a << " : ";
 		//std::sort(nTheta[a], nTheta[a] + K - 1);
 		for (int b = 0; b < scvb0->K; ++b) {
 			myFile << scvb0->nTheta[a][b] << " ";
@@ -118,7 +122,7 @@ void LDA::parseDataFile() {
 	myFile.close();
 	myFile.open("topic.txt");
 	for (int b = 0; b < scvb0->K; ++b) {
-		myFile <<"\n Topic "<<b+1<<" : ";
+		myFile << "\n Topic " << b + 1 << " : ";
 		for (int a = 1; a < 20; ++a) {
 			myFile << scvb0->nPhi[a][b] << " ";
 		}

@@ -41,11 +41,18 @@ SCVB0::SCVB0(int iter, int numberOfTopics, int vocabSize, int numOfDocs,
 
 	for (int w = 0; w < W + 1; w++) {
 		nPhi[w] = new double[K];
-		memset(nPhi[w], 0, sizeof(nPhi[w]));
+//		memset(nPhi[w], 0, sizeof(nPhi[w]));
+		for (int k = 0; k < K; ++k) {
+			nPhi[w][k] = (double)(rand() % 100);
+			cout<<nPhi[w][k];
+		}
 	}
 	for (int d = 0; d < D + 1; d++) {
 		nTheta[d] = new double[K];
-		memset(nTheta[d], 0, sizeof(nTheta[d]));
+//		memset(nTheta[d], 0, sizeof(nTheta[d]));
+		for (int k = 0; k < K; ++k) {
+			nTheta[d][k] = (double)(rand() % 100);
+		}
 	}
 	memset(nz, 0, sizeof(nz));
 }
@@ -62,60 +69,54 @@ void SCVB0::run(MiniBatch miniBatch) {
 	double *nzHat = new double[K];
 	double **gamma = new double*[W + 1];
 
-	for (int w = 0; w < W + 1; ++w) {
+	for (int w = 0; w < W + 1; w++) {
 		nPhiHat[w] = new double[K];
 		gamma[w] = new double[K];
-
 		memset(nPhiHat[w], 0, sizeof(nPhiHat[w]));
 		memset(gamma[w], 0, sizeof(gamma[w]));
 	}
 	memset(nzHat, 0, sizeof(nzHat));
 
 	// This is where original run method starts
-	int j = 1;
-	for (j = 1; j <= (int) docVector.size(); j++) {
+	int j = 0;
+	for (j = 0; j < (int) docVector.size(); j++) {
 		Document doc = docVector[j];
-		for (map<int, int>::iterator iter = doc.termDict.begin(); iter != doc.termDict.end(); ++iter) {
+		for (map<int, int>::iterator iter = doc.termDict.begin(); iter != doc.termDict.end(); iter++) {
 			int term = iter->first;
 			int k = 0;
-//#pragma omp parallel for shared(k, j)
 			for (k = 0; k < K; k++) {
 				gamma[term][k] = ((nPhi[term][k] + eta) / (nz[k] + eta * miniBatch.M)) * (nTheta[doc.docId][k] + alpha);
 
 				nTheta[doc.docId][k] = ((pow((1 - rhoTheta), doc.termDict[term]) * nTheta[doc.docId][k])
 						+ ((1 - pow((1 - rhoTheta), doc.termDict[term])) * doc.Cj * gamma[term][k]));
+				//cout<<" \n doc is "<<doc.docId<<" term is "<<term<< " Gamma is "<<gamma[term][k]<<" Theta is "<<nTheta[doc.docId][k];
 			}
 		}
 
 		for (map<int, int>::iterator iter = doc.termDict.begin(); iter != doc.termDict.end(); ++iter) {
 			int term = iter->first;
 			int k = 0;
-//#pragma omp parallel for shared(k, j)
 			for (k = 0; k < K; k++) {
 				gamma[term][k] = ((nPhi[term][k] + eta)	/ (nz[k] + eta * miniBatch.M)) * (nTheta[doc.docId][k] + alpha);
 
 				nTheta[doc.docId][k] = ((pow((1 - rhoTheta), doc.termDict[term]) * nTheta[doc.docId][k])
 						+ ((1 - pow((1 - rhoTheta), doc.termDict[term])) * doc.Cj * gamma[term][k]));
 
-				nPhiHat[term][k] += nPhiHat[term][k] + C * gamma[term][k];
-				nzHat[k] += nzHat[k] + C * gamma[term][k];
+				nPhiHat[term][k] += nPhiHat[term][k] + (C * gamma[term][k]/ miniBatch.M);
+				nzHat[k] += nzHat[k] + (C * gamma[term][k]/ miniBatch.M);
 			}
 		}
 	}
-//	updateNPhi(nPhiHat, nPhi, rhoPhi);
-//	updateNZ(nzHat, nz, rhoPhi, &gamma);
-	int k = 0;
-	int w = 0;
-//#pragma omp parallel for shared(k) private(w)
-	for (k = 0; k < K; k++) {
-		for (w = 1; w < W + 1; w++) {
-			nPhiHat[w][k] = (C * gamma[w][k]) / miniBatch.M;
+
+	for (int w = 0; w < W + 1; w++) {
+		free(gamma[w]);
+	}
+	free(gamma);
+	for (int k = 0; k < K; k++) {
+		for (int w = 1; w < W + 1; w++) {
 			nPhi[w][k] = ((1 - rhoPhi) * nPhi[w][k]) + (rhoPhi * nPhiHat[w][k]);
-			nzHat[k] = nzHat[k] + gamma[w][k];
 		}
-		nzHat[k] = (C * nzHat[k]) / miniBatch.M;
 		nz[k] = ((1 - rhoPhi) * nz[k]) + (rhoPhi * nzHat[k]);
 	}
-
 	
 }
