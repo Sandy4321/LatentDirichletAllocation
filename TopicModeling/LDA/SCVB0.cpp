@@ -57,10 +57,6 @@ SCVB0::SCVB0(int iter, int numberOfTopics, int vocabSize, int numOfDocs,
 	memset(nz, 0, sizeof(nz));
 }
 
-bool wayToSort(int i, int j) {
-	return i > j;
-}
-
 void SCVB0::run(MiniBatch miniBatch) {
 	vector<Document> docVector = *miniBatch.docVector;
 	cout << "MiniBatchSize: " << miniBatch.M << endl;
