@@ -15,9 +15,16 @@
 #include "Document.h"
 #include "SCVB0.h"
 #include "MiniBatch.h"
+#include "Term.h"
 #include <omp.h>
 #include <fstream>
+#include <algorithm>
 
+
+int currK=0;
+struct myclass {
+  bool operator() (Term i,Term j) { return ((*i.prob)[currK] > (*j.prob)[currK]);}
+} myobject;
 LDA::LDA(string file, int iter, int topics) {
 	numOfDoc = 0;
 	numOfTerms = 0;
@@ -26,6 +33,11 @@ LDA::LDA(string file, int iter, int topics) {
 
 	iterations = iter;
 	numOfTopics = topics;
+}
+
+
+bool LDA::myCompFunction(Term i, Term j) {
+	return ((*i.prob)[currK] > (*j.prob)[currK]);
 }
 
 void LDA::parseDataFile() {
@@ -101,6 +113,24 @@ void LDA::parseDataFile() {
 		}
 		cout << endl;
 	}
+	vector<Term> *termVector = new vector<Term>();
+	//Reading the Vocab file
+	ifstream myVocabFile;
+	myVocabFile.open("vocab.kos.txt");
+	int wordId=1;
+	string word;
+	int eof=0;
+	while(!eof)
+	{
+		if (!(myVocabFile >> word)) {
+			eof = 1;
+			break;
+		}
+		Term *term = new Term(wordId, word);
+		termVector->push_back(*term);
+		wordId++;
+	}
+	cout<<" Term Vector length is "<<termVector->size();
 	//Writing the output to the files
 	ofstream myFile;
 	
@@ -110,17 +140,29 @@ void LDA::parseDataFile() {
 	for (int a = 1; a < scvb0->D + 1; ++a) {
 		myFile <<"Document "<<a<<" : ";
 		//std::sort(nTheta[a], nTheta[a] + K - 1);
-		for (int b = 0; b < scvb0->K; ++b) {
+		for (int b = 0; b < scvb0->K; b++) {
 			myFile << scvb0->nTheta[a][b] << " ";
 		}
 		myFile << endl;
 	}
+	for (int b = 1; b < (scvb0->W)+1; b++) {
+		for (int a = 0; a < scvb0->K; a++) {
+			if(b == 6906){
+				cout<<"second "<<b<<" "<<a<<" "<< scvb0->nPhi[b][a]<<endl;
+			}
+			(*termVector)[b].prob->push_back(scvb0->nPhi[b][a]);
+		}
+	}
+
 	myFile.close();
+	myFile.open("");
 	myFile.open("topic.txt");
 	for (int b = 0; b < scvb0->K; ++b) {
+		currK = b;
+		std::sort(termVector->begin(), termVector->end(), myobject);
 		myFile <<"\n Topic "<<b+1<<" : ";
-		for (int a = 1; a < 20; ++a) {
-			myFile << scvb0->nPhi[a][b] << " ";
+		for (int a = 1; a < 21; a++) {
+			myFile <<" Word Id : " <<(*termVector)[a].wordId<<" "<<(*((*termVector)[a].prob))[b] << "\n";
 		}
 		myFile << endl;
 	}

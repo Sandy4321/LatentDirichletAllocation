@@ -62,10 +62,6 @@ SCVB0::SCVB0(int iter, int numberOfTopics, int vocabSize, int numOfDocs,
 	memset(nz, 0, sizeof(nz));
 }
 
-bool wayToSort(int i, int j) {
-	return i > j;
-}
-
 void SCVB0::run(MiniBatch miniBatch) {
 	vector<Document> docVector = *miniBatch.docVector;
 	cout << "MiniBatchSize: " << miniBatch.M << endl;
@@ -124,6 +120,7 @@ void SCVB0::run(MiniBatch miniBatch) {
 		for (w = 1; w < W + 1; w++) {
 			nPhiHat[w][k] = (C * gamma[w][k]) / miniBatch.M;
 			nPhi[w][k] = ((1 - rhoPhi) * nPhi[w][k]) + (rhoPhi * nPhiHat[w][k]);
+			//cout<<w<<" "<<k<<" "<<nPhi[w][k]<<endl;
 			nzHat[k] = nzHat[k] + gamma[w][k];
 		}
 		nzHat[k] = (C * nzHat[k]) / miniBatch.M;
