@@ -29,11 +29,12 @@ SCVB0::SCVB0(int iter, int numberOfTopics, int vocabSize, int numOfDocs,
 	kappa = 0.9;
 	t = 1;
 
-	alpha = 0.1;
-	eta = 0.01;
 
 	rhoPhi = s / pow((tau + t), kappa);
 	rhoTheta = s / pow((tau + t), kappa);
+
+	alpha = 0.1;
+	eta = 0.01;
 
 	nPhi = new double*[W + 1];
 	nTheta = new double*[D + 1];
@@ -86,7 +87,10 @@ void SCVB0::run(MiniBatch miniBatch) {
 	cout << "MiniBatchSize: " << miniBatch.M << endl;
 	for (std::vector<Document>::iterator it = docVector->begin(); it != docVector->end(); it++) {
 		Document doc = *it;
-		for (int counter = 0; counter < iterations; counter++) {
+		for (int counter = 1; counter <= iterations; counter++) {
+
+			rhoTheta = s / pow((tau + counter), kappa);
+
 			for (map<int, int>::iterator iter = doc.termDict.begin(); iter != doc.termDict.end(); iter++) {
 				int term = iter->first;
 				int k = 0;
