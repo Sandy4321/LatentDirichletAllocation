@@ -22,6 +22,7 @@ public:
 	int W; //no of terms in vocab
 	int D; //Total no of docs in corpus
 	int C; //Total no of words in corpus
+	int numOfBurnInPasses;
 
 	double **nPhi;
 	double **nTheta;
@@ -33,7 +34,6 @@ public:
 	int s;
 	int tau;
 	double kappa;
-	int t;
 
 	double rhoPhi;
 	double rhoTheta;

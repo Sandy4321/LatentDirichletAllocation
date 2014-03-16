@@ -42,7 +42,8 @@ void LDA::parseDataFile() {
 
 	int nProcessors = omp_get_max_threads();
 	omp_set_num_threads(nProcessors);
-	int numOfMiniBatches = nProcessors;
+	int numOfMiniBatches = nProcessors * 10;
+//	int numOfMiniBatches = 1;
 
 	inputfile >> numOfDoc;
 	inputfile >> numOfTerms;
