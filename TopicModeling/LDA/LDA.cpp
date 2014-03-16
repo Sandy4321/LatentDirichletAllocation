@@ -20,6 +20,8 @@
 #include <fstream>
 #include <algorithm>
 
+#define SUBMISSION false
+
 int currTopic = 0;
 struct myclass {
 	bool operator()(Term i, Term j) {
@@ -37,82 +39,9 @@ LDA::LDA(string file, int iter, int topics) {
 	numOfTopics = topics;
 }
 
-void LDA::parseDataFile() {
-	ifstream inputfile(fileName.c_str());
-
-	int nProcessors = omp_get_max_threads();
-	omp_set_num_threads(nProcessors);
-	int numOfMiniBatches = nProcessors * 10;
-//	int numOfMiniBatches = 1;
-
-	inputfile >> numOfDoc;
-	inputfile >> numOfTerms;
-	inputfile >> numOfWordsInCorpus;
-	cout << numOfDoc << " " << numOfTerms << " " << numOfWordsInCorpus << endl;
-	cout << "--------------------" << endl;
-
-	inputfile.close();
-
-	SCVB0 *scvb0 = new SCVB0(iterations, numOfTopics, numOfTerms, numOfDoc,
-			numOfWordsInCorpus);
-
-	int batchSize = (int) numOfDoc / (numOfMiniBatches);
-	int a = 0;
-#pragma omp parallel for shared(a)
-	for (a = 0; a < numOfMiniBatches; ++a) {
-		int docId, wordId, freq;
-		ifstream infile(fileName.c_str());
-		//Ignoring first three lines of the file
-		int x, y, z;
-		infile >> x;
-		infile >> y;
-		infile >> z;
-		int eof = 0;
-		if (!(infile >> docId >> wordId >> freq)) {
-			eof = 1;
-		}
-		int miniBatchStartDoc = (batchSize * a) + 1;
-		while (docId != miniBatchStartDoc) {
-			infile >> docId >> wordId >> freq;
-		}
-		cout << "Minibatch starts at: " << docId << " Ends at: "
-				<< docId + batchSize - 1 << endl;
-		MiniBatch *miniBatch = new MiniBatch();
-		miniBatch->M = 0;
-		std::vector<Document> *docVector = miniBatch->docVector;
-		while (!eof && (docId < miniBatchStartDoc + batchSize)) {
-			map<int, int> *termMap = new map<int, int>();
-			int oldDocId = docId;
-			int Cj = 0;
-			while (docId == oldDocId) {
-				(*termMap)[wordId] = freq;
-				Cj += freq;
-				if (!(infile >> docId >> wordId >> freq)) {
-					eof = 1;
-					break;
-				}
-			}
-			Document *newDoc = new Document(oldDocId, *termMap);
-			newDoc->Cj = Cj;
-			miniBatch->M += Cj;
-			docVector->push_back(*newDoc);
-		}
-		infile.close();
-
-		scvb0->run(*miniBatch);
-		delete miniBatch;
-	}
-//	for (int a = 1; a < scvb0->D + 1; ++a) {
-//		//std::sort(nTheta[a], nTheta[a] + K - 1);
-//		cout << a << endl;
-//		for (int b = 0; b < scvb0->K; ++b) {
-//			cout << scvb0->nTheta[a][b] << " ";
-//		}
-//		cout << endl;
-//	}
-
+void LDA::printResults(SCVB0* scvb0) {
 	cout << "Writing results to file" << endl;
-	vector<Term> *termVector = new vector<Term>();
+	vector<Term>* termVector = new vector<Term>();
 	//Reading the Vocab file
 	ifstream myVocabFile;
 	myVocabFile.open("vocab.kos.txt");
@@ -124,30 +53,25 @@ void LDA::parseDataFile() {
 			eof = 1;
 			break;
 		}
-		Term *term = new Term(wordId, word);
+		Term* term = new Term(wordId, word);
 		termVector->push_back(*term);
 		wordId++;
 	}
 	int p = 0;
-#pragma omp parallel for shared(p)
+#pragma omp parallel for shared(p) num_threads(2)
 	for (p = 0; p < 2; p++) {
 		if (p == 0) {
-
 			ofstream myFile;
 			myFile.open("doctopic.txt");
 			// Each document with its topic allocation
-
-			for (int a = 1; a < scvb0->D + 1; ++a) {
-				myFile << "Document " << a << " : ";
-				//std::sort(nTheta[a], nTheta[a] + K - 1);
-				for (int b = 0; b < scvb0->K; b++) {
-					myFile << scvb0->nTheta[a][b] << " ";
+			for (int d = 1; d < scvb0->D + 1; ++d) {
+				for (int k = 0; k < scvb0->K - 1; k++) {
+					myFile << scvb0->nTheta[d][k] << ",";
 				}
-				myFile << endl;
+				myFile << scvb0->nTheta[d][scvb0->K - 1] << endl;
 			}
 			myFile.close();
 		} else {
-
 			for (std::vector<Term>::iterator it = termVector->begin();
 					it != termVector->end(); it++) {
 				Term t = *it;
@@ -155,20 +79,20 @@ void LDA::parseDataFile() {
 					t.prob->push_back(scvb0->nPhi[t.wordId][a]);
 				}
 			}
-
+#if (SUBMISSION == false)
 			ofstream topicFile;
 			topicFile.open("topic.txt");
 			int counter = 1;
-			for (int a = 0; a < numOfTopics; a++) {
-				currTopic = a;
+			for (int k = 0; k < numOfTopics; k++) {
+				currTopic = k;
 				std::sort(termVector->begin(), termVector->end(), myobject);
-				topicFile << "Topic " << a + 1 << " : " << endl;
+				topicFile << "Topic " << k + 1 << " : " << endl;
 				counter = 1;
 				for (std::vector<Term>::iterator it = termVector->begin();
 						it != termVector->end(); it++) {
 					if (counter < 21) {
-						Term t = *it;
-						topicFile << t.word << " " << (*t.prob)[a] << endl;
+						Term term = *it;
+						topicFile << term.word << " " << (*term.prob)[k] << endl;
 					} else {
 						break;
 					}
@@ -177,10 +101,95 @@ void LDA::parseDataFile() {
 				topicFile << endl;
 			}
 			topicFile.close();
+#else
+			ofstream topicFile;
+			topicFile.open("topic.txt");
+			int counter = 1;
+			for (int k = 0; k < numOfTopics; k++) {
+				currTopic = k;
+				std::sort(termVector->begin(), termVector->end(), myobject);
+				counter = 1;
+				for (std::vector<Term>::iterator it = termVector->begin();
+						it != termVector->end(); it++) {
+					Term term = *it;
+					if (counter < 100) {
+						topicFile << term.wordId << ":" << (*term.prob)[k]
+								<< ",";
+					} else if (counter == 100) {
+						topicFile << term.wordId << ":" << (*term.prob)[k];
+					} else {
+						break;
+					}
+					counter++;
+				}
+				topicFile << endl;
+			}
+			topicFile.close();
+#endif
 		}
 	}
+}
 
-	delete scvb0;
+void LDA::executeSCVB0(SCVB0* scvb0) {
+	int batchSize = 100;
+	int a = 0;
+#pragma omp parallel for shared(a)
+	for (a = 1; a <= numOfDoc; a += batchSize) {
+		int docId, wordId, freq;
+		ifstream infile(fileName.c_str());
+		//Ignoring first three lines of the file
+		int x, y, z;
+		infile >> x;
+		infile >> y;
+		infile >> z;
+		int eof = 0;
+		if (!(infile >> docId >> wordId >> freq)) {
+			eof = 1;
+		}
+		int miniBatchStartDoc = a;
+		while (docId != miniBatchStartDoc) {
+			infile >> docId >> wordId >> freq;
+		}
+//		cout << "Minibatch: " << docId << " - " << docId + batchSize - 1 << endl;
+		MiniBatch* miniBatch = new MiniBatch();
+		miniBatch->M = 0;
+		std::vector<Document>* docVector = miniBatch->docVector;
+		while (!eof && (docId < miniBatchStartDoc + batchSize)) {
+			map<int, int>* termMap = new map<int, int>();
+			int oldDocId = docId;
+			int Cj = 0;
+			while (docId == oldDocId) {
+				(*termMap)[wordId] = freq;
+				Cj += freq;
+				if (!(infile >> docId >> wordId >> freq)) {
+					eof = 1;
+					break;
+				}
+			}
+			Document* newDoc = new Document(oldDocId, *termMap);
+			newDoc->Cj = Cj;
+			miniBatch->M += Cj;
+			docVector->push_back(*newDoc);
+		}
+		infile.close();
+		scvb0->run(*miniBatch);
+		delete miniBatch;
+	}
+}
+
+SCVB0* LDA::parseDataFile() {
+	ifstream inputfile(fileName.c_str());
+	inputfile >> numOfDoc;
+	inputfile >> numOfTerms;
+	inputfile >> numOfWordsInCorpus;
+	cout << numOfDoc << " " << numOfTerms << " " << numOfWordsInCorpus << endl;
+	cout << "--------------------" << endl;
+
+	inputfile.close();
+
+	SCVB0 *scvb0 = new SCVB0(iterations, numOfTopics, numOfTerms, numOfDoc,
+			numOfWordsInCorpus);
+	return scvb0;
 }
 LDA *parseCommandLine(int argv, char *argc[]) {
 	argv--, argc++;
@@ -196,9 +205,21 @@ LDA *parseCommandLine(int argv, char *argc[]) {
 
 int main(int argv, char *argc[]) {
 
+	int nProcessors = omp_get_max_threads();
+	omp_set_num_threads(nProcessors);
+
 	double tStart = omp_get_wtime();
 	LDA *lda = parseCommandLine(argv, argc);
-	lda->parseDataFile();
+	SCVB0 *scvb0 = lda->parseDataFile();
+
+	for (int itr = 0; itr < lda->iterations; ++itr) {
+		cout << "Iteration: " << itr + 1 << endl;
+		lda->executeSCVB0(scvb0);
+	}
+
+	lda->printResults(scvb0);
+
+	delete scvb0;
 	delete lda;
 	double tEnd = omp_get_wtime();
 	cout << "Done." << endl;

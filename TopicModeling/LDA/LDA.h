@@ -12,6 +12,7 @@
 #include <map>
 #include <string>
 #include "Term.h"
+#include "SCVB0.h"
 
 using namespace std;
 
@@ -25,7 +26,9 @@ public:
 	string fileName;
 	LDA(string fileName, int iter, int topics);
 	int main(int argv, char *argc[]);
-	void parseDataFile();
+	SCVB0* parseDataFile();
+	void printResults(SCVB0* scvb0);
+	void executeSCVB0(SCVB0* scvb0);
 };
 
 #endif /* LDA_H_ */

@@ -23,7 +23,7 @@ SCVB0::SCVB0(int iter, int numberOfTopics, int vocabSize, int numOfDocs,
 	W = vocabSize;
 	D = numOfDocs;
 	C = corpusSize;
-	numOfBurnInPasses = 5;
+	numOfBurnInPasses = 1;
 
 	s = 1;
 	tau = 10;
@@ -85,7 +85,6 @@ void SCVB0::run(MiniBatch miniBatch) {
 	// This is where original run method starts
 	vector<Document> *docVector = miniBatch.docVector;
 	random_shuffle(docVector->begin(), docVector->end());
-	cout << "MiniBatchSize: " << miniBatch.M << endl;
 	for (std::vector<Document>::iterator it = docVector->begin(); it != docVector->end(); it++) {
 		Document doc = *it;
 		for (int counter = 1; counter <= numOfBurnInPasses; counter++) {
@@ -120,7 +119,7 @@ void SCVB0::run(MiniBatch miniBatch) {
 
 	for (int k = 0; k < K; k++) {
 		for (int w = 1; w < W + 1; w++) {
-			rhoPhi = s / pow((tau + (w*k)), kappa);
+			rhoPhi = s / pow((tau + w), kappa);
 			nPhi[w][k] = ((1 - rhoPhi) * nPhi[w][k]) + (rhoPhi * nPhiHat[w][k]);
 		}
 		nz[k] = ((1 - rhoPhi) * nz[k]) + (rhoPhi * nzHat[k]);
