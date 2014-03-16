@@ -61,38 +61,51 @@ void LDA::printResults(SCVB0* scvb0) {
 #pragma omp parallel for shared(p) num_threads(2)
 	for (p = 0; p < 2; p++) {
 		if (p == 0) {
-			ofstream myFile;
-			myFile.open("doctopic.txt");
+			ofstream doctopicFile;
+			doctopicFile.open("doctopic.txt");
 			// Each document with its topic allocation
 			for (int d = 1; d < scvb0->D + 1; ++d) {
+				double k_total = 0;
+				for (int k = 0; k < scvb0->K; k++) {
+					k_total += scvb0->nTheta[d][k];
+				}
 				for (int k = 0; k < scvb0->K - 1; k++) {
-					myFile << scvb0->nTheta[d][k] << ",";
+					doctopicFile << scvb0->nTheta[d][k] / k_total << ",";
 				}
-				myFile << scvb0->nTheta[d][scvb0->K - 1] << endl;
+				doctopicFile << scvb0->nTheta[d][scvb0->K - 1] / k_total
+						<< endl;
 			}
-			myFile.close();
+			doctopicFile.close();
 		} else {
-			for (std::vector<Term>::iterator it = termVector->begin();
-					it != termVector->end(); it++) {
-				Term t = *it;
-				for (int a = 0; a < scvb0->K; a++) {
-					t.prob->push_back(scvb0->nPhi[t.wordId][a]);
+			for (int k = 0; k < scvb0->K; k++) {
+				double k_total = 0;
+				for (std::vector<Term>::iterator it = termVector->begin();
+						it != termVector->end(); it++) {
+					Term term = *it;
+					k_total += scvb0->nPhi[term.wordId][k];
+				}
+				for (std::vector<Term>::iterator it = termVector->begin();
+						it != termVector->end(); it++) {
+					Term term = *it;
+					term.prob->push_back(scvb0->nPhi[term.wordId][k] / k_total);
 				}
 			}
-#if (SUBMISSION == false)
+#if SUBMISSION
 			ofstream topicFile;
 			topicFile.open("topic.txt");
 			int counter = 1;
 			for (int k = 0; k < numOfTopics; k++) {
 				currTopic = k;
 				std::sort(termVector->begin(), termVector->end(), myobject);
-				topicFile << "Topic " << k + 1 << " : " << endl;
 				counter = 1;
 				for (std::vector<Term>::iterator it = termVector->begin();
 						it != termVector->end(); it++) {
-					if (counter < 21) {
-						Term term = *it;
-						topicFile << term.word << " " << (*term.prob)[k] << endl;
+					Term term = *it;
+					if (counter < 100) {
+						topicFile << term.wordId << ":" << (*term.prob)[k]
+						<< ",";
+					} else if (counter == 100) {
+						topicFile << term.wordId << ":" << (*term.prob)[k];
 					} else {
 						break;
 					}
@@ -108,15 +121,14 @@ void LDA::printResults(SCVB0* scvb0) {
 			for (int k = 0; k < numOfTopics; k++) {
 				currTopic = k;
 				std::sort(termVector->begin(), termVector->end(), myobject);
+				topicFile << "Topic " << k + 1 << " : " << endl;
 				counter = 1;
 				for (std::vector<Term>::iterator it = termVector->begin();
 						it != termVector->end(); it++) {
-					Term term = *it;
-					if (counter < 100) {
-						topicFile << term.wordId << ":" << (*term.prob)[k]
-								<< ",";
-					} else if (counter == 100) {
-						topicFile << term.wordId << ":" << (*term.prob)[k];
+					if (counter < 21) {
+						Term term = *it;
+						topicFile << term.word << " " << (*term.prob)[k]
+								<< endl;
 					} else {
 						break;
 					}
@@ -125,6 +137,7 @@ void LDA::printResults(SCVB0* scvb0) {
 				topicFile << endl;
 			}
 			topicFile.close();
+
 #endif
 		}
 	}
@@ -177,7 +190,7 @@ void LDA::executeSCVB0(SCVB0* scvb0) {
 	}
 }
 
-SCVB0* LDA::parseDataFile() {
+SCVB0 * LDA::parseDataFile() {
 	ifstream inputfile(fileName.c_str());
 	inputfile >> numOfDoc;
 	inputfile >> numOfTerms;
