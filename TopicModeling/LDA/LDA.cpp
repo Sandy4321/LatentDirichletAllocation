@@ -20,8 +20,8 @@
 #include <fstream>
 #include <algorithm>
 
+int currTopic = 0;
 struct myclass {
-	int currTopic;
 	bool operator()(Term i, Term j) {
 		return ((*i.prob)[currTopic] > (*j.prob)[currTopic]);
 	}
@@ -43,10 +43,6 @@ void LDA::parseDataFile() {
 	int nProcessors = omp_get_max_threads();
 	omp_set_num_threads(nProcessors);
 	int numOfMiniBatches = nProcessors;
-	MiniBatch *miniBatches[numOfMiniBatches];
-	for (int c = 0; c < numOfMiniBatches; ++c) {
-		miniBatches[c] = new MiniBatch();
-	}
 
 	inputfile >> numOfDoc;
 	inputfile >> numOfTerms;
@@ -55,12 +51,17 @@ void LDA::parseDataFile() {
 	cout << "--------------------" << endl;
 
 	inputfile.close();
+
+	SCVB0 *scvb0 = new SCVB0(iterations, numOfTopics, numOfTerms, numOfDoc,
+			numOfWordsInCorpus);
+
 	int batchSize = (int) numOfDoc / (numOfMiniBatches);
 	int a = 0;
 #pragma omp parallel for shared(a)
 	for (a = 0; a < numOfMiniBatches; ++a) {
 		int docId, wordId, freq;
 		ifstream infile(fileName.c_str());
+		//Ignoring first three lines of the file
 		int x, y, z;
 		infile >> x;
 		infile >> y;
@@ -73,37 +74,32 @@ void LDA::parseDataFile() {
 		while (docId != miniBatchStartDoc) {
 			infile >> docId >> wordId >> freq;
 		}
-		cout << "Minibatch starts at: " << docId << " MiniBatch Ends at: "
+		cout << "Minibatch starts at: " << docId << " Ends at: "
 				<< docId + batchSize - 1 << endl;
-		MiniBatch *nextBatch = miniBatches[a];
-		nextBatch->M = 0;
-		std::vector<Document> *docVector = nextBatch->docVector;
+		MiniBatch *miniBatch = new MiniBatch();
+		miniBatch->M = 0;
+		std::vector<Document> *docVector = miniBatch->docVector;
 		while (!eof && (docId < miniBatchStartDoc + batchSize)) {
-			intMap termMap;
+			map<int, int> *termMap = new map<int, int>();
 			int oldDocId = docId;
 			int Cj = 0;
 			while (docId == oldDocId) {
-				termMap[wordId] = freq;
+				(*termMap)[wordId] = freq;
 				Cj += freq;
 				if (!(infile >> docId >> wordId >> freq)) {
 					eof = 1;
 					break;
 				}
 			}
-			Document *newDoc = new Document(oldDocId, termMap);
+			Document *newDoc = new Document(oldDocId, *termMap);
 			newDoc->Cj = Cj;
-			nextBatch->M += Cj;
+			miniBatch->M += Cj;
 			docVector->push_back(*newDoc);
 		}
 		infile.close();
-	}
-	int b = 0;
-	SCVB0 *scvb0 = new SCVB0(iterations, numOfTopics, numOfTerms, numOfDoc,
-			numOfWordsInCorpus);
-#pragma omp parallel for shared(b)
-	for (b = 0; b < numOfMiniBatches; ++b) {
-		MiniBatch *minibatch = miniBatches[b];
-		scvb0->run(*minibatch);
+
+		scvb0->run(*miniBatch);
+//		delete (miniBatch);
 	}
 //	for (int a = 1; a < scvb0->D + 1; ++a) {
 //		//std::sort(nTheta[a], nTheta[a] + K - 1);
@@ -118,7 +114,7 @@ void LDA::parseDataFile() {
 	vector<Term> *termVector = new vector<Term>();
 	//Reading the Vocab file
 	ifstream myVocabFile;
-	myVocabFile.open("vocab.nytimes.txt");
+	myVocabFile.open("vocab.kos.txt");
 	int wordId = 1;
 	string word;
 	int eof = 0;
@@ -135,9 +131,8 @@ void LDA::parseDataFile() {
 #pragma omp parallel for shared(p)
 	for (p = 0; p < 2; p++) {
 		if (p == 0) {
-			//Writing the output to the files
-			ofstream myFile;
 
+			ofstream myFile;
 			myFile.open("doctopic.txt");
 			// Each document with its topic allocation
 
@@ -164,7 +159,7 @@ void LDA::parseDataFile() {
 			topicFile.open("topic.txt");
 			int counter = 1;
 			for (int a = 0; a < numOfTopics; a++) {
-				myobject.currTopic = a;
+				currTopic = a;
 				std::sort(termVector->begin(), termVector->end(), myobject);
 				topicFile << "Topic " << a + 1 << " : " << endl;
 				counter = 1;
@@ -184,7 +179,7 @@ void LDA::parseDataFile() {
 		}
 	}
 
-	delete scvb0;
+//	delete scvb0;
 }
 LDA *parseCommandLine(int argv, char *argc[]) {
 	argv--, argc++;
@@ -203,7 +198,7 @@ int main(int argv, char *argc[]) {
 	double tStart = omp_get_wtime();
 	LDA *lda = parseCommandLine(argv, argc);
 	lda->parseDataFile();
-	delete lda;
+//	delete lda;
 	double tEnd = omp_get_wtime();
 	cout << "Done." << endl;
 	printf("Time taken: %.2fs\n", (double) (tEnd - tStart));

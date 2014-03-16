@@ -13,15 +13,16 @@
 
 using namespace std;
 
-typedef std::map<int,int> intMap;
+//typedef std::map<int,int> intMap;
 
 class Document {
 public:
 	int docId;
 	int Cj;
-	intMap termDict;
+	map<int, int> termDict;
 	Document();
-	Document(int id, intMap termMap);
+	Document(int id, map<int, int> termMap);
+	virtual ~Document();
 };
 
 #endif /* DOCUMENT_H_ */

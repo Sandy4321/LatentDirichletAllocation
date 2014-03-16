@@ -12,9 +12,14 @@ Document::Document() {
 	Cj = 0;
 }
 
-Document::Document(int id, intMap termMap) {
+Document::Document(int id, map<int, int> termMap) {
 	docId = id;
 	Cj = 0;
 	termDict = termMap;
+}
+
+Document::~Document() {
+//	termDict.clear();
+//	delete (&termDict);
 }
 

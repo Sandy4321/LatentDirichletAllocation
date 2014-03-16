@@ -18,6 +18,7 @@ MiniBatch::MiniBatch() {
 }
 
 MiniBatch::~MiniBatch() {
-	// TODO Auto-generated destructor stub
+	docVector->clear();
+	delete (docVector);
 }
 

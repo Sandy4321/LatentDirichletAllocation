@@ -68,8 +68,6 @@ SCVB0::~SCVB0() {
 }
 
 void SCVB0::run(MiniBatch miniBatch) {
-	vector<Document> docVector = *miniBatch.docVector;
-//	cout << "MiniBatchSize: " << miniBatch.M << endl;
 
 	double **nPhiHat = new double*[W + 1];
 	double *nzHat = new double[K];
@@ -84,9 +82,10 @@ void SCVB0::run(MiniBatch miniBatch) {
 	memset(nzHat, 0, sizeof(nzHat));
 
 	// This is where original run method starts
-	int j = 0;
-	for (j = 0; j < (int) docVector.size(); j++) {
-		Document doc = docVector[j];
+	vector<Document> *docVector = miniBatch.docVector;
+	cout << "MiniBatchSize: " << miniBatch.M << endl;
+	for (std::vector<Document>::iterator it = docVector->begin(); it != docVector->end(); it++) {
+		Document doc = *it;
 		for (map<int, int>::iterator iter = doc.termDict.begin(); iter != doc.termDict.end(); iter++) {
 			int term = iter->first;
 			int k = 0;
@@ -120,10 +119,10 @@ void SCVB0::run(MiniBatch miniBatch) {
 		nz[k] = ((1 - rhoPhi) * nz[k]) + (rhoPhi * nzHat[k]);
 	}
 	for (int w = 0; w < W + 1; w++) {
-		delete[](gamma[w]);
-		delete[](nPhiHat[w]);
+		delete[] (gamma[w]);
+		delete[] (nPhiHat[w]);
 	}
-	delete[](nPhiHat);
-	delete[](gamma);
-	delete[](nzHat);
+	delete[] (nPhiHat);
+	delete[] (gamma);
+	delete[] (nzHat);
 }

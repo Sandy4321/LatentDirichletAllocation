@@ -15,8 +15,6 @@
 
 using namespace std;
 
-typedef std::map<int,string> stringMap;
-
 class LDA {
 public:
 	int numOfDoc;
