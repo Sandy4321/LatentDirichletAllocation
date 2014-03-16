@@ -19,7 +19,6 @@ Document::Document(int id, map<int, int> termMap) {
 }
 
 Document::~Document() {
-//	termDict.clear();
-//	delete (&termDict);
+	termDict.clear();
 }
 

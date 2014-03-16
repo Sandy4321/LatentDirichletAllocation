@@ -99,7 +99,7 @@ void LDA::parseDataFile() {
 		infile.close();
 
 		scvb0->run(*miniBatch);
-//		delete (miniBatch);
+		delete miniBatch;
 	}
 //	for (int a = 1; a < scvb0->D + 1; ++a) {
 //		//std::sort(nTheta[a], nTheta[a] + K - 1);
@@ -179,7 +179,7 @@ void LDA::parseDataFile() {
 		}
 	}
 
-//	delete scvb0;
+	delete scvb0;
 }
 LDA *parseCommandLine(int argv, char *argc[]) {
 	argv--, argc++;
@@ -198,7 +198,7 @@ int main(int argv, char *argc[]) {
 	double tStart = omp_get_wtime();
 	LDA *lda = parseCommandLine(argv, argc);
 	lda->parseDataFile();
-//	delete lda;
+	delete lda;
 	double tEnd = omp_get_wtime();
 	cout << "Done." << endl;
 	printf("Time taken: %.2fs\n", (double) (tEnd - tStart));

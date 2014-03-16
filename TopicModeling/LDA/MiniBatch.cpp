@@ -19,6 +19,5 @@ MiniBatch::MiniBatch() {
 
 MiniBatch::~MiniBatch() {
 	docVector->clear();
-	delete (docVector);
 }
 

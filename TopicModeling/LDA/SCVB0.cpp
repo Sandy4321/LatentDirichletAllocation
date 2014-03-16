@@ -86,17 +86,18 @@ void SCVB0::run(MiniBatch miniBatch) {
 	cout << "MiniBatchSize: " << miniBatch.M << endl;
 	for (std::vector<Document>::iterator it = docVector->begin(); it != docVector->end(); it++) {
 		Document doc = *it;
-		for (map<int, int>::iterator iter = doc.termDict.begin(); iter != doc.termDict.end(); iter++) {
-			int term = iter->first;
-			int k = 0;
-			for (k = 0; k < K; k++) {
-				gamma[term][k] = ((nPhi[term][k] + eta) / (nz[k] + eta * miniBatch.M)) * (nTheta[doc.docId][k] + alpha);
+		for (int counter = 0; counter < iterations; counter++) {
+			for (map<int, int>::iterator iter = doc.termDict.begin(); iter != doc.termDict.end(); iter++) {
+				int term = iter->first;
+				int k = 0;
+				for (k = 0; k < K; k++) {
+					gamma[term][k] = ((nPhi[term][k] + eta) / (nz[k] + eta * miniBatch.M)) * (nTheta[doc.docId][k] + alpha);
 
-				nTheta[doc.docId][k] = ((pow((1 - rhoTheta), doc.termDict[term]) * nTheta[doc.docId][k])
-						+ ((1 - pow((1 - rhoTheta), doc.termDict[term])) * doc.Cj * gamma[term][k]));
+					nTheta[doc.docId][k] = ((pow((1 - rhoTheta), doc.termDict[term]) * nTheta[doc.docId][k])
+							+ ((1 - pow((1 - rhoTheta), doc.termDict[term])) * doc.Cj * gamma[term][k]));
+				}
 			}
 		}
-
 		for (map<int, int>::iterator iter = doc.termDict.begin(); iter != doc.termDict.end(); ++iter) {
 			int term = iter->first;
 			int k = 0;
