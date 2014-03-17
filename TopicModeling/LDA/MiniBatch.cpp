@@ -6,6 +6,12 @@
  */
 
 #include "MiniBatch.h"
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <iostream>
+
+using namespace std;
 
 MiniBatch::MiniBatch(int m, vector<Document> *documentVector) {
 	M = m;

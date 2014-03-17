@@ -38,10 +38,15 @@ public:
 	double rhoPhi;
 	double rhoTheta;
 
+	int rhoPhi_t;
+	int rhoTheta_t;
+
+	vector<MiniBatch*> *miniBatches;
+
 	SCVB0(int iter, int numberOfTopics, int vocabSize, int numOfDocs,
 			int corpusSize);
 	virtual ~SCVB0();
-	void run(MiniBatch miniBatch);
+	void run(MiniBatch* miniBatch);
 };
 
 #endif /* SCVB0_H_ */

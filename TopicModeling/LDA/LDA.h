@@ -25,16 +25,15 @@ public:
 	int iterations;
 	int numOfTopics;
 	string fileName;
-	vector<MiniBatch> *miniBatches;
-	vector<Term>* termVector;
+	vector<Term*>* termVector;
 
 	LDA(string fileName, int iter, int topics);
 	int main(int argv, char *argc[]);
 	SCVB0* parseDataFile();
 	void printResults(SCVB0* scvb0);
 	void executeSCVB0(SCVB0* scvb0);
-	virtual ~LDA();
 	double normalizeAndPerplexity(SCVB0* scvb0);
+	virtual ~LDA();
 };
 
 #endif /* LDA_H_ */

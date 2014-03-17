@@ -25,13 +25,17 @@ SCVB0::SCVB0(int iter, int numberOfTopics, int vocabSize, int numOfDocs,
 	C = corpusSize;
 	numOfBurnInPasses = 1;
 
+	miniBatches = new vector<MiniBatch*>();
+
 	s = 1;
 	tau = 10;
 	kappa = 0.9;
 
 
-	rhoPhi = s / pow((tau + 1), kappa);
-	rhoTheta = s / pow((tau + 1), kappa);
+	rhoPhi_t = 1;
+	rhoTheta_t = 1;
+	rhoPhi = s / pow((tau + rhoPhi_t), kappa);
+	rhoTheta = s / pow((tau + rhoPhi_t), kappa);
 
 	alpha = 0.1;
 	eta = 0.01;
@@ -57,6 +61,7 @@ SCVB0::SCVB0(int iter, int numberOfTopics, int vocabSize, int numOfDocs,
 }
 
 SCVB0::~SCVB0() {
+	miniBatches->clear();
 	for (int w = 0; w < W + 1; w++) {
 		delete[] (nPhi[w]);
 	}
@@ -68,7 +73,7 @@ SCVB0::~SCVB0() {
 	delete[] (nz);
 }
 
-void SCVB0::run(MiniBatch miniBatch) {
+void SCVB0::run(MiniBatch* miniBatch) {
 
 	double **nPhiHat = new double*[W + 1];
 	double *nzHat = new double[K];
@@ -83,43 +88,49 @@ void SCVB0::run(MiniBatch miniBatch) {
 	memset(nzHat, 0, sizeof(double)*K);
 
 	// This is where original run method starts
-	vector<Document> *docVector = miniBatch.docVector;
-	random_shuffle(docVector->begin(), docVector->end());
+	vector<Document> *docVector = miniBatch->docVector;
 	for (std::vector<Document>::iterator it = docVector->begin(); it != docVector->end(); it++) {
 		Document doc = *it;
 		for (int counter = 1; counter <= numOfBurnInPasses; counter++) {
-			rhoTheta = s / pow((tau + counter), kappa);
+			rhoTheta = s / pow((tau + rhoTheta_t), kappa);
+			rhoTheta_t++;
+
 			for (map<int, int>::iterator iter = doc.termDict.begin(); iter != doc.termDict.end(); iter++) {
 				int term = iter->first;
 				int k = 0;
 				for (k = 0; k < K; k++) {
-					gamma[term][k] = ((nPhi[term][k] + eta) * (nTheta[doc.docId][k] + alpha) / (nz[k] + eta * miniBatch.M));
+					gamma[term][k] = ((nPhi[term][k] + eta) * (nTheta[doc.docId][k] + alpha) / (nz[k] + eta * miniBatch->M));
 
 					nTheta[doc.docId][k] = ((pow((1 - rhoTheta), doc.termDict[term]) * nTheta[doc.docId][k])
 							+ ((1 - pow((1 - rhoTheta), doc.termDict[term])) * doc.Cj * gamma[term][k]));
 				}
 			}
 		}
-		int t = 0;
+
+		rhoTheta = s / pow((tau + rhoTheta_t), kappa);
+		rhoTheta_t++;
 		for (map<int, int>::iterator iter = doc.termDict.begin(); iter != doc.termDict.end(); ++iter) {
 			int term = iter->first;
-			t++;
-			rhoTheta = s / pow((tau + t + numOfBurnInPasses), kappa);
 
 			for (int k = 0; k < K; k++) {
-				gamma[term][k] = ((nPhi[term][k] + eta) * (nTheta[doc.docId][k] + alpha)/ (nz[k] + eta * miniBatch.M));
+				gamma[term][k] = ((nPhi[term][k] + eta) * (nTheta[doc.docId][k] + alpha)/ (nz[k] + eta * miniBatch->M));
 				nTheta[doc.docId][k] = ((pow((1 - rhoTheta), doc.termDict[term]) * nTheta[doc.docId][k])
 						+ ((1 - pow((1 - rhoTheta), doc.termDict[term])) * doc.Cj * gamma[term][k]));
 
-				nPhiHat[term][k] = nPhiHat[term][k] + (C * gamma[term][k]/ miniBatch.M);
-				nzHat[k] = nzHat[k] + (C * gamma[term][k]/ miniBatch.M);
+				if (nTheta[doc.docId][k] == 0) {
+					cout << "nTheta: " << nTheta[doc.docId][k] << " docId: "
+							<< doc.docId << " k: " << k << endl;
+				}
+				nPhiHat[term][k] = nPhiHat[term][k] + (C * gamma[term][k]/ miniBatch->M);
+				nzHat[k] = nzHat[k] + (C * gamma[term][k]/ miniBatch->M);
 			}
 		}
 	}
 
+	rhoPhi = s / pow((tau + rhoPhi_t), kappa);
+	rhoPhi_t++;
 	for (int k = 0; k < K; k++) {
 		for (int w = 1; w < W + 1; w++) {
-			rhoPhi = s / pow((tau + w), kappa);
 			nPhi[w][k] = ((1 - rhoPhi) * nPhi[w][k]) + (rhoPhi * nPhiHat[w][k]);
 		}
 		nz[k] = ((1 - rhoPhi) * nz[k]) + (rhoPhi * nzHat[k]);
