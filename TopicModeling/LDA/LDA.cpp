@@ -46,7 +46,6 @@ LDA::~LDA() {
 }
 
 double LDA::normalizeAndPerplexity(SCVB0* scvb0) {
-
 	double sumProb = 0.0, perplexity = 0.0;
 	for (int k = 0; k < scvb0->K; k++) {
 		double k_total = 0;
@@ -57,11 +56,26 @@ double LDA::normalizeAndPerplexity(SCVB0* scvb0) {
 		for (std::vector<Term>::iterator it = termVector->begin(); it != termVector->end(); it++) {
 			Term term = *it;
 			double temp = scvb0->nPhi[term.wordId][k] / k_total;
+			scvb0->nPhi[term.wordId][k] = temp;
 			term.prob->push_back(temp);
-
-			sumProb += log(temp);
 		}
 	}
+	int d = 1;
+#pragma omp parallel for
+	for (d = 1; d < scvb0->D + 1; ++d) {
+			double k_total = 0;
+			for (int k = 0; k < scvb0->K; k++) {
+				k_total += scvb0->nTheta[d][k];
+			}
+			for (int k = 0; k < scvb0->K; k++) {
+				double temp = scvb0->nTheta[d][k] / k_total;
+				scvb0->nTheta[d][k] = temp;
+				for (std::vector<Term>::iterator it = termVector->begin(); it != termVector->end(); it++) {
+					Term term = *it;
+					sumProb += log((scvb0->nTheta[d][k]) * ((*term.prob)[k]));
+				}
+			}
+		}
 	perplexity = exp(-sumProb / scvb0->C);
 	return perplexity;
 }
@@ -76,15 +90,10 @@ void LDA::printResults(SCVB0* scvb0) {
 			doctopicFile.open("doctopic.txt");
 			// Each document with its topic allocation
 			for (int d = 1; d < scvb0->D + 1; ++d) {
-				double k_total = 0;
-				for (int k = 0; k < scvb0->K; k++) {
-					k_total += scvb0->nTheta[d][k];
-				}
 				for (int k = 0; k < scvb0->K - 1; k++) {
-					doctopicFile << scvb0->nTheta[d][k] / k_total << ",";
+					doctopicFile << scvb0->nTheta[d][k] << ",";
 				}
-				doctopicFile << scvb0->nTheta[d][scvb0->K - 1] / k_total
-						<< endl;
+				doctopicFile << scvb0->nTheta[d][scvb0->K - 1] << endl;
 			}
 			doctopicFile.close();
 		} else {
