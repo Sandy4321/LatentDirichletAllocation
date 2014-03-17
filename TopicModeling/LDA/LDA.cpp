@@ -35,32 +35,39 @@ LDA::LDA(string file, int iter, int topics) {
 	numOfWordsInCorpus = 0;
 	fileName = file;
 	miniBatches = new vector<MiniBatch>();
+	termVector = new vector<Term>();
 	iterations = iter;
 	numOfTopics = topics;
 }
 
 LDA::~LDA() {
 	miniBatches->clear();
+	termVector->clear();
+}
+
+double LDA::normalizeAndPerplexity(SCVB0* scvb0) {
+
+	double sumProb = 0.0, perplexity = 0.0;
+	for (int k = 0; k < scvb0->K; k++) {
+		double k_total = 0;
+		for (std::vector<Term>::iterator it = termVector->begin(); it != termVector->end(); it++) {
+			Term term = *it;
+			k_total += scvb0->nPhi[term.wordId][k];
+		}
+		for (std::vector<Term>::iterator it = termVector->begin(); it != termVector->end(); it++) {
+			Term term = *it;
+			double temp = scvb0->nPhi[term.wordId][k] / k_total;
+			term.prob->push_back(temp);
+
+			sumProb += log(temp);
+		}
+	}
+	perplexity = exp(-sumProb / scvb0->C);
+	return perplexity;
 }
 
 void LDA::printResults(SCVB0* scvb0) {
 	cout << "Writing results to file" << endl;
-	vector<Term>* termVector = new vector<Term>();
-	//Reading the Vocab file
-	ifstream myVocabFile;
-	myVocabFile.open("vocab.kos.txt");
-	int wordId = 1;
-	string word;
-	int eof = 0;
-	while (!eof) {
-		if (!(myVocabFile >> word)) {
-			eof = 1;
-			break;
-		}
-		Term* term = new Term(wordId, word);
-		termVector->push_back(*term);
-		wordId++;
-	}
 	int p = 0;
 #pragma omp parallel for shared(p) num_threads(2)
 	for (p = 0; p < 2; p++) {
@@ -81,31 +88,6 @@ void LDA::printResults(SCVB0* scvb0) {
 			}
 			doctopicFile.close();
 		} else {
-			for (int k = 0; k < scvb0->K; k++) {
-				double k_total = 0;
-				for (std::vector<Term>::iterator it = termVector->begin();
-						it != termVector->end(); it++) {
-					Term term = *it;
-					k_total += scvb0->nPhi[term.wordId][k];
-				}
-				for (std::vector<Term>::iterator it = termVector->begin();
-						it != termVector->end(); it++) {
-					Term term = *it;
-					term.prob->push_back(scvb0->nPhi[term.wordId][k] / k_total);
-				}
-				//perplexity
-				double sumProb=0.0,perplexity=0.0;
-				for (std::vector<Term>::iterator it = termVector->begin();
-						it != termVector->end(); it++) {
-					Term term = *it;
-					for( k=0;k < scvb0->K; k++)
-					{
-						sumProb += log(scvb0->nPhi[term.wordId][k]);
-					}
-				}	
-				perplexity= exp(-sumProb/scvb0->C);
-				cout<<"Perplexity"<<perplexity;
-			}
 #if SUBMISSION
 			ofstream topicFile;
 			topicFile.open("topic.txt");
@@ -214,6 +196,21 @@ SCVB0 * LDA::parseDataFile() {
 		miniBatches->push_back(*miniBatch);
 		infile.close();
 	}
+//Reading the Vocab file
+	ifstream myVocabFile;
+	myVocabFile.open("vocab.kos.txt");
+	int wordId = 1;
+	string word;
+	int eof = 0;
+	while (!eof) {
+		if (!(myVocabFile >> word)) {
+			eof = 1;
+			break;
+		}
+		Term* term = new Term(wordId, word);
+		termVector->push_back(*term);
+		wordId++;
+	}
 	return scvb0;
 }
 LDA *parseCommandLine(int argv, char *argc[]) {
@@ -238,12 +235,15 @@ int main(int argv, char *argc[]) {
 	SCVB0 *scvb0 = lda->parseDataFile();
 
 	for (int itr = 0; itr < lda->iterations; ++itr) {
-		cout << "Iteration: " << itr + 1 << endl;
 		int m = 0;
 #pragma omp parallel for shared(m)
 		for (m = 0; m < (int) lda->miniBatches->size(); m++) {
 			scvb0->run((*lda->miniBatches)[m]);
 		}
+
+		double perplexity = lda->normalizeAndPerplexity(scvb0);
+		cout << "Perplexity after iteration: " << itr + 1 << " is "
+				<< perplexity << endl;
 	}
 
 	lda->printResults(scvb0);
