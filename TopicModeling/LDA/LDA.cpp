@@ -19,7 +19,7 @@
 #include <omp.h>
 #include <fstream>
 #include <algorithm>
-
+#include <math.h>
 #define SUBMISSION false
 
 int currTopic = 0;
@@ -93,6 +93,18 @@ void LDA::printResults(SCVB0* scvb0) {
 					Term term = *it;
 					term.prob->push_back(scvb0->nPhi[term.wordId][k] / k_total);
 				}
+				//perplexity
+				double sumProb=0.0,perplexity=0.0;
+				for (std::vector<Term>::iterator it = termVector->begin();
+						it != termVector->end(); it++) {
+					Term term = *it;
+					for( k=0;k < scvb0->K; k++)
+					{
+						sumProb += log(scvb0->nPhi[term.wordId][k]);
+					}
+				}	
+				perplexity= exp(-sumProb/scvb0->C);
+				cout<<"Perplexity"<<perplexity;
 			}
 #if SUBMISSION
 			ofstream topicFile;
