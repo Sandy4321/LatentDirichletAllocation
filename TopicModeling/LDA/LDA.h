@@ -11,6 +11,7 @@
 #include <omp.h>
 #include <map>
 #include <string>
+#include <vector>
 #include "Term.h"
 #include "SCVB0.h"
 
@@ -24,11 +25,13 @@ public:
 	int iterations;
 	int numOfTopics;
 	string fileName;
+	vector<MiniBatch> *miniBatches;
 	LDA(string fileName, int iter, int topics);
 	int main(int argv, char *argc[]);
 	SCVB0* parseDataFile();
 	void printResults(SCVB0* scvb0);
 	void executeSCVB0(SCVB0* scvb0);
+	virtual ~LDA();
 };
 
 #endif /* LDA_H_ */

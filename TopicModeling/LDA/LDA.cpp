@@ -34,9 +34,13 @@ LDA::LDA(string file, int iter, int topics) {
 	numOfTerms = 0;
 	numOfWordsInCorpus = 0;
 	fileName = file;
-
+	miniBatches = new vector<MiniBatch>();
 	iterations = iter;
 	numOfTopics = topics;
+}
+
+LDA::~LDA() {
+	miniBatches->clear();
 }
 
 void LDA::printResults(SCVB0* scvb0) {
@@ -143,7 +147,18 @@ void LDA::printResults(SCVB0* scvb0) {
 	}
 }
 
-void LDA::executeSCVB0(SCVB0* scvb0) {
+SCVB0 * LDA::parseDataFile() {
+	ifstream inputfile(fileName.c_str());
+	inputfile >> numOfDoc;
+	inputfile >> numOfTerms;
+	inputfile >> numOfWordsInCorpus;
+	cout << numOfDoc << " " << numOfTerms << " " << numOfWordsInCorpus << endl;
+	cout << "--------------------" << endl;
+
+	inputfile.close();
+
+	SCVB0 *scvb0 = new SCVB0(iterations, numOfTopics, numOfTerms, numOfDoc,
+			numOfWordsInCorpus);
 	int batchSize = 100;
 	int a = 0;
 #pragma omp parallel for shared(a)
@@ -163,7 +178,7 @@ void LDA::executeSCVB0(SCVB0* scvb0) {
 		while (docId != miniBatchStartDoc) {
 			infile >> docId >> wordId >> freq;
 		}
-//		cout << "Minibatch: " << docId << " - " << docId + batchSize - 1 << endl;
+		//		cout << "Minibatch: " << docId << " - " << docId + batchSize - 1 << endl;
 		MiniBatch* miniBatch = new MiniBatch();
 		miniBatch->M = 0;
 		std::vector<Document>* docVector = miniBatch->docVector;
@@ -184,24 +199,9 @@ void LDA::executeSCVB0(SCVB0* scvb0) {
 			miniBatch->M += Cj;
 			docVector->push_back(*newDoc);
 		}
+		miniBatches->push_back(*miniBatch);
 		infile.close();
-		scvb0->run(*miniBatch);
-		delete miniBatch;
 	}
-}
-
-SCVB0 * LDA::parseDataFile() {
-	ifstream inputfile(fileName.c_str());
-	inputfile >> numOfDoc;
-	inputfile >> numOfTerms;
-	inputfile >> numOfWordsInCorpus;
-	cout << numOfDoc << " " << numOfTerms << " " << numOfWordsInCorpus << endl;
-	cout << "--------------------" << endl;
-
-	inputfile.close();
-
-	SCVB0 *scvb0 = new SCVB0(iterations, numOfTopics, numOfTerms, numOfDoc,
-			numOfWordsInCorpus);
 	return scvb0;
 }
 LDA *parseCommandLine(int argv, char *argc[]) {
@@ -227,7 +227,11 @@ int main(int argv, char *argc[]) {
 
 	for (int itr = 0; itr < lda->iterations; ++itr) {
 		cout << "Iteration: " << itr + 1 << endl;
-		lda->executeSCVB0(scvb0);
+		int m = 0;
+#pragma omp parallel for shared(m)
+		for (m = 0; m < (int) lda->miniBatches->size(); m++) {
+			scvb0->run((*lda->miniBatches)[m]);
+		}
 	}
 
 	lda->printResults(scvb0);
