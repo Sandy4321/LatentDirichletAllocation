@@ -65,11 +65,11 @@ double LDA::normalizeAndPerplexity(SCVB0* scvb0) {
 #pragma omp parallel for shared(d)
 	for (d = 1; d < scvb0->D + 1; ++d) {
 
-//		double prod = 1;
 		double k_total = 0;
 		for (int k = 0; k < scvb0->K; k++) {
 			k_total += scvb0->nTheta[d][k];
 		}
+
 		for (int k = 0; k < scvb0->K; k++) {
 			double temp = scvb0->nTheta[d][k] / k_total;
 			scvb0->nTheta[d][k] = temp;
@@ -80,7 +80,7 @@ double LDA::normalizeAndPerplexity(SCVB0* scvb0) {
 			}
 		}
 	}
-	cout << "sumProb: " << sumProb << endl;
+	cout << "sumProb: " << sumProb << " C: " << scvb0->C << endl;
 	perplexity = exp(-sumProb / scvb0->C);
 	return perplexity;
 }
@@ -171,9 +171,19 @@ SCVB0 * LDA::parseDataFile(int nProcessors) {
 
 	int miniBatchSize = 100;
 	int megaBatchStartDoc = 1;
-#pragma omp parallel for shared(megaBatchStartDoc, scvb0)
+	int megaBatchId = 0;
+	int totalWork = (nProcessors * (nProcessors + 1) / 2);
+	vector<int>* batchSizes = new vector<int>();
+	for (megaBatchId = 0; megaBatchId < nProcessors; megaBatchId++) {
+		batchSizes->push_back(
+				(nProcessors - megaBatchId) * numOfDoc / totalWork);
+	}
+	int BatchCounter = nProcessors;
+
+#pragma omp parallel for shared(BatchCounter, scvb0, batchSizes)
 	for (megaBatchStartDoc = 1; megaBatchStartDoc <= numOfDoc;
-			megaBatchStartDoc += megaBatchSize) {
+			megaBatchStartDoc += (*batchSizes)[nProcessors - BatchCounter]) {
+		BatchCounter--;
 		int docId, wordId, freq;
 		ifstream infile(fileName.c_str());
 		//Ignoring first three lines of the file
