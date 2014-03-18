@@ -29,7 +29,7 @@ public:
 
 	LDA(string fileName, int iter, int topics);
 	int main(int argv, char *argc[]);
-	SCVB0* parseDataFile();
+	SCVB0* parseDataFile(int nProcessors);
 	void printResults(SCVB0* scvb0);
 	void executeSCVB0(SCVB0* scvb0);
 	double normalizeAndPerplexity(SCVB0* scvb0);
