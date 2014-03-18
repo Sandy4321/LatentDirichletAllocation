@@ -32,6 +32,7 @@ public:
 	SCVB0* parseDataFile(int nProcessors);
 	void printResults(SCVB0* scvb0);
 	void executeSCVB0(SCVB0* scvb0);
+	void normalize(SCVB0* scvb0);
 	double normalizeAndPerplexity(SCVB0* scvb0);
 	virtual ~LDA();
 };
