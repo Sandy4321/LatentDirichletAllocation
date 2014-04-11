@@ -292,7 +292,7 @@ int main(int argv, char *argc[]) {
 	//Setting the number of threads
 	int nProcessors = omp_get_max_threads();
 	omp_set_num_threads(nProcessors);
-	
+
 	double tStart = omp_get_wtime();
 	LDA *lda = parseCommandLine(argv, argc);
 	double tStart1 = omp_get_wtime();
@@ -312,7 +312,7 @@ int main(int argv, char *argc[]) {
 		}
 
 		lda->normalize(scvb0);
-		/* Call the normalizeAndPerplexity function for calculating the perplexity and comment the normalize function 
+		/* Call the normalizeAndPerplexity function for calculating the perplexity and comment the normalize function
 		double perplexity = lda->normalizeAndPerplexity(scvb0);
 		cout << "Perplexity after iteration: " << itr + 1 << " is "
 				<< perplexity << endl;
