@@ -31,11 +31,10 @@ SCVB0::SCVB0(int iter, int numberOfTopics, int vocabSize, int numOfDocs,
 	tau = 10;
 	kappa = 0.9;
 
-
 	rhoPhi_t = 1;
 	rhoTheta_t = 1;
 	rhoPhi = s / pow((tau + rhoPhi_t), kappa);
-	rhoTheta = s / pow((tau + rhoPhi_t), kappa);
+	rhoTheta = s / pow((tau + rhoTheta_t), kappa);
 
 	alpha = 0.1;
 	eta = 0.01;
@@ -82,17 +81,17 @@ void SCVB0::run(MiniBatch* miniBatch) {
 	for (int w = 0; w < W + 1; w++) {
 		nPhiHat[w] = new double[K];
 		gamma[w] = new double[K];
-		memset(nPhiHat[w], 0, sizeof(double)*K);
-		memset(gamma[w], 0, sizeof(double)*K);
+		memset(nPhiHat[w], 0, sizeof(double) * K);
+		memset(gamma[w], 0, sizeof(double) * K);
 	}
-	memset(nzHat, 0, sizeof(double)*K);
+	memset(nzHat, 0, sizeof(double) * K);
 
 	// This is where original run method starts
 	vector<Document> *docVector = miniBatch->docVector;
 	for (std::vector<Document>::iterator it = docVector->begin(); it != docVector->end(); it++) {
 		Document doc = *it;
 		for (int counter = 1; counter <= numOfBurnInPasses; counter++) {
-			rhoTheta = s / pow((tau + rhoTheta_t), kappa);
+			rhoTheta = s / pow((10 + rhoTheta_t), kappa);
 			rhoTheta_t++;
 
 			for (map<int, int>::iterator iter = doc.termDict.begin(); iter != doc.termDict.end(); iter++) {
@@ -107,7 +106,7 @@ void SCVB0::run(MiniBatch* miniBatch) {
 			}
 		}
 
-		rhoTheta = s / pow((tau + rhoTheta_t), kappa);
+		rhoTheta = s / pow((10 + rhoTheta_t), kappa);
 		rhoTheta_t++;
 		for (map<int, int>::iterator iter = doc.termDict.begin(); iter != doc.termDict.end(); ++iter) {
 			int term = iter->first;
@@ -123,7 +122,7 @@ void SCVB0::run(MiniBatch* miniBatch) {
 		}
 	}
 
-	rhoPhi = s / pow((tau + rhoPhi_t), kappa);
+	rhoPhi = s / pow((100 + rhoPhi_t), kappa);
 	rhoPhi_t++;
 	for (int k = 0; k < K; k++) {
 		for (int w = 1; w < W + 1; w++) {

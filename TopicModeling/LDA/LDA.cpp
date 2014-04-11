@@ -20,7 +20,7 @@
 #include <fstream>
 #include <algorithm>
 #include <math.h>
-#define SUBMISSION true
+#define SUBMISSION false
 
 int currTopic = 0;
 struct myclass {
@@ -45,9 +45,8 @@ LDA::~LDA() {
 }
 
 /* REQUIRED WHILE CALCULATING PERPLEXITY */
-/*
+
 double LDA::normalizeAndPerplexity(SCVB0* scvb0) {
-	double sumProb = 0.0, perplexity = 0.0;
 	for (int k = 0; k < scvb0->K; k++) {
 		double k_total = 0;
 		for (std::vector<Term*>::iterator it = termVector->begin();
@@ -63,8 +62,9 @@ double LDA::normalizeAndPerplexity(SCVB0* scvb0) {
 			term->prob->push_back(temp);
 		}
 	}
+	double sumProb = 0.0, perplexity = 0.0;
 	int d = 1;
-	#pragma omp parallel for shared(d)
+//#pragma omp parallel for shared(d, sumProb)
 	for (d = 1; d < scvb0->D + 1; ++d) {
 
 		double k_total = 0;
@@ -75,18 +75,20 @@ double LDA::normalizeAndPerplexity(SCVB0* scvb0) {
 		for (int k = 0; k < scvb0->K; k++) {
 			double temp = scvb0->nTheta[d][k] / k_total;
 			scvb0->nTheta[d][k] = temp;
-			for (std::vector<Term*>::iterator it = termVector->begin();
-					it != termVector->end(); it++) {
+			double summation = 0;
+			for (std::vector<Term*>::iterator it = termVector->begin();it != termVector->end(); it++) {
 				Term* term = *it;
-				sumProb += log(temp * ((*term->prob)[k]));
+				summation += (temp * ((*term->prob)[k]));
 			}
+			sumProb += (log(summation) / log(2));
 		}
 	}
-	cout << "sumProb: " << sumProb << " C: " << scvb0->C << endl;
-	perplexity = exp(-sumProb / scvb0->C);
+	double temp  = (-sumProb) / scvb0->C;
+//	cout << "sumProb: " << sumProb << " C: " << scvb0->C << endl;
+	perplexity = pow(2, temp);
 	return perplexity;
 }
-*/
+
 void LDA::normalize(SCVB0* scvb0) {
 	for (int k = 0; k < scvb0->K; k++) {
 		double k_total = 0;
@@ -104,7 +106,7 @@ void LDA::normalize(SCVB0* scvb0) {
 		}
 	}
 	int d = 1;
-	#pragma omp parallel for shared(d)
+#pragma omp parallel for shared(d)
 	for (d = 1; d < scvb0->D + 1; ++d) {
 
 		double k_total = 0;
@@ -122,7 +124,7 @@ void LDA::normalize(SCVB0* scvb0) {
 void LDA::printResults(SCVB0* scvb0) {
 	cout << "Writing results to file" << endl;
 	int p = 0;
-	#pragma omp parallel for shared(p)
+#pragma omp parallel for shared(p)
 	for (p = 0; p < 2; p++) {
 		if (p == 0) {
 			ofstream doctopicFile;
@@ -136,7 +138,7 @@ void LDA::printResults(SCVB0* scvb0) {
 			}
 			doctopicFile.close();
 		} else {
-			#if SUBMISSION
+#if SUBMISSION
 			ofstream topicFile;
 			topicFile.open("topic.txt");
 			int counter = 1;
@@ -160,7 +162,7 @@ void LDA::printResults(SCVB0* scvb0) {
 				topicFile << endl;
 			}
 			topicFile.close();
-			#else
+#else
 			ofstream topicFile;
 			topicFile.open("topic.txt");
 			int counter = 1;
@@ -183,7 +185,7 @@ void LDA::printResults(SCVB0* scvb0) {
 				topicFile << endl;
 			}
 			topicFile.close();
-			#endif
+#endif
 		}
 	}
 }
@@ -262,7 +264,7 @@ SCVB0 * LDA::parseDataFile(int nProcessors) {
 	}
 	//Reading the Vocabulary file
 	ifstream myVocabFile;
-	myVocabFile.open("vocab.nytimes.txt");
+	myVocabFile.open("vocab.kos.txt");
 	int wordId = 1;
 	string word;
 	int eof = 0;
@@ -280,7 +282,9 @@ SCVB0 * LDA::parseDataFile(int nProcessors) {
 LDA *parseCommandLine(int argv, char *argc[]) {
 	argv--, argc++;
 	if (argv < 3) {
-		cerr<< "Malformed command. Correct format: ./fastLDA docword.txt iterations NumOfTopics"<< endl;
+		cerr
+				<< "Malformed command. Correct format: ./fastLDA docword.txt iterations NumOfTopics"
+				<< endl;
 		exit(1);
 	}
 	LDA *lda = new LDA(string(argc[0]), atoi(argc[1]), atoi(argc[2]));
@@ -301,9 +305,9 @@ int main(int argv, char *argc[]) {
 	printf("Time taken to read files: %.2fs\n", (double) (tEnd1 - tStart1));
 
 	for (int itr = 0; itr < lda->iterations; ++itr) {
-		cout << "Iteration: " << itr + 1 << endl;
+//		cout << "Iteration: " << itr + 1 << endl;
 		int m = 0;
-		#pragma omp parallel for shared(m)
+#pragma omp parallel for shared(m)
 		for (m = 0; m < (int) scvb0->miniBatches->size(); m++) {
 			scvb0->rhoPhi_t = 1;
 			scvb0->rhoTheta_t = 1;
@@ -311,12 +315,10 @@ int main(int argv, char *argc[]) {
 			scvb0->run((*scvb0->miniBatches)[m]);
 		}
 
-		lda->normalize(scvb0);
-		/* Call the normalizeAndPerplexity function for calculating the perplexity and comment the normalize function
+//		lda->normalize(scvb0);
+//		 Call the normalizeAndPerplexity function for calculating the perplexity and comment the normalize function
 		double perplexity = lda->normalizeAndPerplexity(scvb0);
-		cout << "Perplexity after iteration: " << itr + 1 << " is "
-				<< perplexity << endl;
-		*/
+		cout << itr + 1 << "," << perplexity << endl;
 	}
 
 	lda->printResults(scvb0);
