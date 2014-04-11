@@ -20,7 +20,7 @@
 #include <fstream>
 #include <algorithm>
 #include <math.h>
-#define SUBMISSION false
+#define SUBMISSION true
 
 int currTopic = 0;
 struct myclass {
@@ -44,6 +44,8 @@ LDA::~LDA() {
 	termVector->clear();
 }
 
+/* REQUIRED WHILE CALCULATING PERPLEXITY */
+/*
 double LDA::normalizeAndPerplexity(SCVB0* scvb0) {
 	double sumProb = 0.0, perplexity = 0.0;
 	for (int k = 0; k < scvb0->K; k++) {
@@ -62,7 +64,7 @@ double LDA::normalizeAndPerplexity(SCVB0* scvb0) {
 		}
 	}
 	int d = 1;
-#pragma omp parallel for shared(d)
+	#pragma omp parallel for shared(d)
 	for (d = 1; d < scvb0->D + 1; ++d) {
 
 		double k_total = 0;
@@ -84,11 +86,43 @@ double LDA::normalizeAndPerplexity(SCVB0* scvb0) {
 	perplexity = exp(-sumProb / scvb0->C);
 	return perplexity;
 }
+*/
+void LDA::normalize(SCVB0* scvb0) {
+	for (int k = 0; k < scvb0->K; k++) {
+		double k_total = 0;
+		for (std::vector<Term*>::iterator it = termVector->begin();
+				it != termVector->end(); it++) {
+			Term* term = *it;
+			k_total += scvb0->nPhi[term->wordId][k];
+		}
+		for (std::vector<Term*>::iterator it = termVector->begin();
+				it != termVector->end(); it++) {
+			Term* term = *it;
+			double temp = scvb0->nPhi[term->wordId][k] / k_total;
+			scvb0->nPhi[term->wordId][k] = temp;
+			term->prob->push_back(temp);
+		}
+	}
+	int d = 1;
+	#pragma omp parallel for shared(d)
+	for (d = 1; d < scvb0->D + 1; ++d) {
+
+		double k_total = 0;
+		for (int k = 0; k < scvb0->K; k++) {
+			k_total += scvb0->nTheta[d][k];
+		}
+
+		for (int k = 0; k < scvb0->K; k++) {
+			double temp = scvb0->nTheta[d][k] / k_total;
+			scvb0->nTheta[d][k] = temp;
+		}
+	}
+}
 
 void LDA::printResults(SCVB0* scvb0) {
 	cout << "Writing results to file" << endl;
 	int p = 0;
-#pragma omp parallel for shared(p)
+	#pragma omp parallel for shared(p)
 	for (p = 0; p < 2; p++) {
 		if (p == 0) {
 			ofstream doctopicFile;
@@ -102,7 +136,7 @@ void LDA::printResults(SCVB0* scvb0) {
 			}
 			doctopicFile.close();
 		} else {
-#if SUBMISSION
+			#if SUBMISSION
 			ofstream topicFile;
 			topicFile.open("topic.txt");
 			int counter = 1;
@@ -110,14 +144,14 @@ void LDA::printResults(SCVB0* scvb0) {
 				currTopic = k;
 				std::sort(termVector->begin(), termVector->end(), myobject);
 				counter = 1;
-				for (std::vector<Term>::iterator it = termVector->begin();
+				for (std::vector<Term*>::iterator it = termVector->begin();
 						it != termVector->end(); it++) {
-					Term term = *it;
+					Term* term = *it;
 					if (counter < 100) {
-						topicFile << term.wordId << ":" << (*term.prob)[k]
+						topicFile << term->wordId << ":" << (*term->prob)[k]
 						<< ",";
 					} else if (counter == 100) {
-						topicFile << term.wordId << ":" << (*term.prob)[k];
+						topicFile << term->wordId << ":" << (*term->prob)[k];
 					} else {
 						break;
 					}
@@ -126,7 +160,7 @@ void LDA::printResults(SCVB0* scvb0) {
 				topicFile << endl;
 			}
 			topicFile.close();
-#else
+			#else
 			ofstream topicFile;
 			topicFile.open("topic.txt");
 			int counter = 1;
@@ -149,8 +183,7 @@ void LDA::printResults(SCVB0* scvb0) {
 				topicFile << endl;
 			}
 			topicFile.close();
-
-#endif
+			#endif
 		}
 	}
 }
@@ -186,7 +219,7 @@ SCVB0 * LDA::parseDataFile(int nProcessors) {
 		BatchCounter--;
 		int docId, wordId, freq;
 		ifstream infile(fileName.c_str());
-		//Ignoring first three lines of the file
+		//Ignoring first three lines of the file as they are already read
 		int x, y, z;
 		infile >> x;
 		infile >> y;
@@ -227,9 +260,9 @@ SCVB0 * LDA::parseDataFile(int nProcessors) {
 		}
 		infile.close();
 	}
-	//Reading the Vocab file
+	//Reading the Vocabulary file
 	ifstream myVocabFile;
-	myVocabFile.open("vocab.kos.txt");
+	myVocabFile.open("vocab.nytimes.txt");
 	int wordId = 1;
 	string word;
 	int eof = 0;
@@ -247,9 +280,7 @@ SCVB0 * LDA::parseDataFile(int nProcessors) {
 LDA *parseCommandLine(int argv, char *argc[]) {
 	argv--, argc++;
 	if (argv < 3) {
-		cerr
-				<< "Malformed command. Correct format: ./fastLDA docword.txt iterations NumOfTopics"
-				<< endl;
+		cerr<< "Malformed command. Correct format: ./fastLDA docword.txt iterations NumOfTopics"<< endl;
 		exit(1);
 	}
 	LDA *lda = new LDA(string(argc[0]), atoi(argc[1]), atoi(argc[2]));
@@ -258,9 +289,10 @@ LDA *parseCommandLine(int argv, char *argc[]) {
 
 int main(int argv, char *argc[]) {
 
+	//Setting the number of threads
 	int nProcessors = omp_get_max_threads();
 	omp_set_num_threads(nProcessors);
-
+	
 	double tStart = omp_get_wtime();
 	LDA *lda = parseCommandLine(argv, argc);
 	double tStart1 = omp_get_wtime();
@@ -271,7 +303,7 @@ int main(int argv, char *argc[]) {
 	for (int itr = 0; itr < lda->iterations; ++itr) {
 		cout << "Iteration: " << itr + 1 << endl;
 		int m = 0;
-#pragma omp parallel for shared(m)
+		#pragma omp parallel for shared(m)
 		for (m = 0; m < (int) scvb0->miniBatches->size(); m++) {
 			scvb0->rhoPhi_t = 1;
 			scvb0->rhoTheta_t = 1;
@@ -279,9 +311,12 @@ int main(int argv, char *argc[]) {
 			scvb0->run((*scvb0->miniBatches)[m]);
 		}
 
+		lda->normalize(scvb0);
+		/* Call the normalizeAndPerplexity function for calculating the perplexity and comment the normalize function 
 		double perplexity = lda->normalizeAndPerplexity(scvb0);
 		cout << "Perplexity after iteration: " << itr + 1 << " is "
 				<< perplexity << endl;
+		*/
 	}
 
 	lda->printResults(scvb0);
@@ -289,7 +324,7 @@ int main(int argv, char *argc[]) {
 	delete scvb0;
 	delete lda;
 	double tEnd = omp_get_wtime();
-	cout << "Done." << endl;
+	cout << "Done " << endl;
 	printf("Time taken: %.2fs\n", (double) (tEnd - tStart));
 	return 0;
 }

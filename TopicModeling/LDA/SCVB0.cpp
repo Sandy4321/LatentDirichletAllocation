@@ -117,10 +117,6 @@ void SCVB0::run(MiniBatch* miniBatch) {
 				nTheta[doc.docId][k] = ((pow((1 - rhoTheta), doc.termDict[term]) * nTheta[doc.docId][k])
 						+ ((1 - pow((1 - rhoTheta), doc.termDict[term])) * doc.Cj * gamma[term][k]));
 
-				if (nTheta[doc.docId][k] == 0) {
-					cout << "nTheta: " << nTheta[doc.docId][k] << " docId: "
-							<< doc.docId << " k: " << k << endl;
-				}
 				nPhiHat[term][k] = nPhiHat[term][k] + (C * gamma[term][k]/ miniBatch->M);
 				nzHat[k] = nzHat[k] + (C * gamma[term][k]/ miniBatch->M);
 			}
