@@ -20,7 +20,7 @@
 #include <fstream>
 #include <algorithm>
 #include <math.h>
-#define SUBMISSION false
+#define SUBMISSION true
 
 int currTopic = 0;
 struct myclass {
@@ -84,7 +84,7 @@ double LDA::normalizeAndPerplexity(SCVB0* scvb0) {
 		}
 	}
 	double temp  = (-sumProb) / scvb0->C;
-//	cout << "sumProb: " << sumProb << " C: " << scvb0->C << endl;
+	cout << "sumProb: " << sumProb << " C: " << scvb0->C << endl;
 	perplexity = pow(2, temp);
 	return perplexity;
 }
@@ -201,7 +201,7 @@ SCVB0 * LDA::parseDataFile(int nProcessors) {
 	inputfile.close();
 
 	SCVB0 *scvb0 = new SCVB0(iterations, numOfTopics, numOfTerms, numOfDoc,
-			numOfWordsInCorpus);
+			0);
 	int megaBatchSize = (int) numOfDoc / nProcessors;
 
 	int miniBatchSize = 100;
@@ -256,27 +256,37 @@ SCVB0 * LDA::parseDataFile(int nProcessors) {
 				Document* newDoc = new Document(oldDocId, *termMap);
 				newDoc->Cj = Cj;
 				miniBatch->M += Cj;
+				scvb0->C += Cj;
 				miniBatch->docVector->push_back(*newDoc);
 			}
 			scvb0->miniBatches->push_back(miniBatch);
 		}
 		infile.close();
 	}
-	//Reading the Vocabulary file
-	ifstream myVocabFile;
-	myVocabFile.open("vocab.kos.txt");
-	int wordId = 1;
-	string word;
-	int eof = 0;
-	while (!eof) {
-		if (!(myVocabFile >> word)) {
-			eof = 1;
-			break;
-		}
-		Term* term = new Term(wordId, word);
+
+#if SUBMISSION
+	for (int wordId = 1; wordId <= numOfTerms; ++wordId) {
+		Term* term = new Term(wordId, "");
 		termVector->push_back(term);
-		wordId++;
 	}
+#else
+	//Reading the Vocabulary file
+		ifstream myVocabFile;
+		myVocabFile.open("vocab.nytimes.txt");
+		int wordId = 1;
+		string word;
+		int eof = 0;
+		while (!eof) {
+			if (!(myVocabFile >> word)) {
+				eof = 1;
+				break;
+			}
+			Term* term = new Term(wordId, word);
+			termVector->push_back(term);
+			wordId++;
+		}
+#endif
+
 	return scvb0;
 }
 LDA *parseCommandLine(int argv, char *argc[]) {
@@ -315,10 +325,10 @@ int main(int argv, char *argc[]) {
 			scvb0->run((*scvb0->miniBatches)[m]);
 		}
 
-//		lda->normalize(scvb0);
+		lda->normalize(scvb0);
 //		 Call the normalizeAndPerplexity function for calculating the perplexity and comment the normalize function
-		double perplexity = lda->normalizeAndPerplexity(scvb0);
-		cout << itr + 1 << "," << perplexity << endl;
+//		double perplexity = lda->normalizeAndPerplexity(scvb0);
+//		cout << itr + 1 << "," << perplexity << endl;
 	}
 
 	lda->printResults(scvb0);

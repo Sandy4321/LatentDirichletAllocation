@@ -33,8 +33,8 @@ SCVB0::SCVB0(int iter, int numberOfTopics, int vocabSize, int numOfDocs,
 
 	rhoPhi_t = 1;
 	rhoTheta_t = 1;
-	rhoPhi = s / pow((tau + rhoPhi_t), kappa);
-	rhoTheta = s / pow((tau + rhoTheta_t), kappa);
+	rhoPhi = s / pow((100 + rhoPhi_t), kappa);
+	rhoTheta = s / pow((10 + rhoTheta_t), kappa);
 
 	alpha = 0.1;
 	eta = 0.01;
