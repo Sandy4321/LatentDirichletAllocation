@@ -315,7 +315,7 @@ int main(int argv, char *argc[]) {
 	printf("Time taken to read files: %.2fs\n", (double) (tEnd1 - tStart1));
 
 	for (int itr = 0; itr < lda->iterations; ++itr) {
-//		cout << "Iteration: " << itr + 1 << endl;
+		cout << "Iteration: " << itr + 1 << endl;
 		int m = 0;
 #pragma omp parallel for shared(m)
 		for (m = 0; m < (int) scvb0->miniBatches->size(); m++) {

@@ -96,12 +96,14 @@ void SCVB0::run(MiniBatch* miniBatch) {
 
 			for (map<int, int>::iterator iter = doc.termDict.begin(); iter != doc.termDict.end(); iter++) {
 				int term = iter->first;
-				int k = 0;
-				for (k = 0; k < K; k++) {
-					gamma[term][k] = ((nPhi[term][k] + eta) * (nTheta[doc.docId][k] + alpha) / (nz[k] + eta * miniBatch->M));
+				if(term > 0){
+					int k = 0;
+					for (k = 0; k < K; k++) {
+						gamma[term][k] = ((nPhi[term][k] + eta) * (nTheta[doc.docId][k] + alpha) / (nz[k] + eta * miniBatch->M));
 
-					nTheta[doc.docId][k] = ((pow((1 - rhoTheta), doc.termDict[term]) * nTheta[doc.docId][k])
-							+ ((1 - pow((1 - rhoTheta), doc.termDict[term])) * doc.Cj * gamma[term][k]));
+						nTheta[doc.docId][k] = ((pow((1 - rhoTheta), doc.termDict[term]) * nTheta[doc.docId][k])
+								+ ((1 - pow((1 - rhoTheta), doc.termDict[term])) * doc.Cj * gamma[term][k]));
+					}
 				}
 			}
 		}
@@ -110,14 +112,15 @@ void SCVB0::run(MiniBatch* miniBatch) {
 		rhoTheta_t++;
 		for (map<int, int>::iterator iter = doc.termDict.begin(); iter != doc.termDict.end(); ++iter) {
 			int term = iter->first;
+			if(term > 0){
+				for (int k = 0; k < K; k++) {
+					gamma[term][k] = ((nPhi[term][k] + eta) * (nTheta[doc.docId][k] + alpha)/ (nz[k] + eta * miniBatch->M));
+					nTheta[doc.docId][k] = ((pow((1 - rhoTheta), doc.termDict[term]) * nTheta[doc.docId][k])
+							+ ((1 - pow((1 - rhoTheta), doc.termDict[term])) * doc.Cj * gamma[term][k]));
 
-			for (int k = 0; k < K; k++) {
-				gamma[term][k] = ((nPhi[term][k] + eta) * (nTheta[doc.docId][k] + alpha)/ (nz[k] + eta * miniBatch->M));
-				nTheta[doc.docId][k] = ((pow((1 - rhoTheta), doc.termDict[term]) * nTheta[doc.docId][k])
-						+ ((1 - pow((1 - rhoTheta), doc.termDict[term])) * doc.Cj * gamma[term][k]));
-
-				nPhiHat[term][k] = nPhiHat[term][k] + (C * gamma[term][k]/ miniBatch->M);
-				nzHat[k] = nzHat[k] + (C * gamma[term][k]/ miniBatch->M);
+					nPhiHat[term][k] = nPhiHat[term][k] + (C * gamma[term][k]/ miniBatch->M);
+					nzHat[k] = nzHat[k] + (C * gamma[term][k]/ miniBatch->M);
+				}
 			}
 		}
 	}
